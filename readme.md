@@ -19,4 +19,3 @@ If utilizing this module to support an academic publication, please cite [this](
     url = "http://dx.doi.org/10.13140/RG.2.2.25803.60967",
 }
 ```
-
