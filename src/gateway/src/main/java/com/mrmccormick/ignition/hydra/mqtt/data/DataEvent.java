@@ -5,16 +5,12 @@ import java.util.Objects;
 
 public class DataEvent {
 
-    public final DataEventType Type;
     public final Date Timestamp;
     public final String Path;
     public final Object Value;
+    public final String PathOverride;
 
-    public DataEvent(DataEventType type, String path, Date timestamp, Object value) {
-        if (type == null)
-            throw new IllegalArgumentException("Type cannot be null");
-        Type = type;
-
+    public DataEvent(String path, Date timestamp, Object value, String pathOverride) {
         if (path == null)
             throw new IllegalArgumentException("path cannot be null");
         if (path.isEmpty())
@@ -27,6 +23,27 @@ public class DataEvent {
 
         // Value can be null
         Value = value;
+
+        // PathOverride can be null
+        PathOverride = pathOverride;
+    }
+
+    public DataEvent(String path, Date timestamp, Object value) {
+        if (path == null)
+            throw new IllegalArgumentException("path cannot be null");
+        if (path.isEmpty())
+            throw new IllegalArgumentException("path cannot be empty");
+        Path = path;
+
+        if (timestamp == null)
+            throw new IllegalArgumentException("timestamp cannot be null");
+        Timestamp = timestamp;
+
+        // Value can be null
+        Value = value;
+
+        // PathOverride can be null
+        PathOverride = null;
     }
 
     @Override

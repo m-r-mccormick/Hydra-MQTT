@@ -14,7 +14,7 @@ clean:
 	@if [ -f gateway/pom.xml.versionsBackup ]; then \
 		mv gateway/pom.xml.versionsBackup gateway/pom.xml; \
 	fi
-	
+
 	@rm -f *.modl
 	@mvn clean -q
 	@echo Clean Module Complete.
@@ -29,7 +29,7 @@ build:
 	@if [ -f gateway/pom.xml.versionsBackup ]; then \
 		mv gateway/pom.xml.versionsBackup gateway/pom.xml; \
 	fi
-	
+
 	@VERSION=$$(cat version) && \
 	BUILD_VERSION="-SNAPSHOT"; \
 	if [ "$${BUILD_CONFIG}" = "RELEASE" ]; then \
@@ -38,11 +38,10 @@ build:
 	else \
 		echo "Building Module in Pre-Release Configuration..."; \
 	fi; \
-	sleep 5; \
 	if [ -z $${BUILD_NUMBER} ]; then BUILD_NUMBER=1; fi && \
 	mvn versions:set -DnewVersion=$${VERSION}$${BUILD_VERSION} -Dbuild.number=$${BUILD_NUMBER} -DgenerateBackupPoms=true -f pom.xml -q
 	@mvn package -q
-	
+
 	@if [ -f pom.xml.versionsBackup ]; then \
 		mv pom.xml.versionsBackup pom.xml; \
 	fi
@@ -60,6 +59,7 @@ OUTPUT_DIR="."
 SECRETS_DIR="secrets"
 sign: build
 	@if [ ! -f "module-signer.jar" ]; then \
+	    rm -rf "module-signer/"; \
 		echo "Downloading and building module signer..."; \
 		git clone --quiet https://github.com/inductiveautomation/module-signer; \
 		$$(cd "module-signer" && mvn package -q); \

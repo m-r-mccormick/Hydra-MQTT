@@ -1,0 +1,37 @@
+<!-- Copyright and theme information -->
+<div class="md-copyright">
+  {% if config.copyright %}
+    <div class="md-copyright__highlight">
+      {{ config.copyright }}
+    </div>
+  {% endif %}
+  {% if not config.extra.generator == false %}
+  <table class="md-copyright-table">
+    <tr>
+      <td class="md-copyright-table__left">
+        Copyright &copy;
+<!--        <script>document.write(new Date().getFullYear())</script>-->
+        <a
+                href="https://github.com/m-r-mccormick"
+                target="_blank"
+                rel="noopener"
+        >
+          M. R. McCormick
+        </a>
+      </td>
+      <td class="md-copyright-table__right">
+        Made with
+        <a
+                href="https://squidfunk.github.io/mkdocs-material/"
+                target="_blank"
+                rel="noopener"
+        >
+          Material for MkDocs
+        </a>
+      </td>
+    </tr>
+  </table>
+  {% endif %}
+</div>
+
+

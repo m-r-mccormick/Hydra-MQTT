@@ -1,18 +1,18 @@
 package com.mrmccormick.ignition.hydra.mqtt;
 
-import com.mrmccormick.ignition.hydra.mqtt.data.JsonCoder;
 import com.mrmccormick.ignition.hydra.mqtt.settings.SettingsManager;
-
-import java.util.*;
 
 import com.inductiveautomation.ignition.common.licensing.LicenseState;
 import com.inductiveautomation.ignition.gateway.model.AbstractGatewayModuleHook;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.ignition.gateway.web.models.*;
+import java.util.*;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.util.ArrayList;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
-
 
 public class GatewayHook extends AbstractGatewayModuleHook {
 
@@ -30,119 +30,148 @@ public class GatewayHook extends AbstractGatewayModuleHook {
 
     private final Logger _logger = GetLogger(null);
     private GatewayContext _context;
-    private TagManager _tagManagerSubscribe;
-    private MqttManager _mqttManager;
     private SettingsManager _settingsManager;
+    private final List<Connection> _connections = new ArrayList<>();
 
     @Override
     public void setup(GatewayContext context) {
-        _logger.info("Setting up module...");
+
+        _logger.info("Configuring module...");
+        var startTimeMs = System.currentTimeMillis();
 
         if (context == null) {
-            _logger.fatal("Module setup function received null context");
+            _logger.fatal("Module setup function received null gateway context");
             return;
         }
-        _context = context;
 
         try {
-            _settingsManager = new SettingsManager(_context, this);
+            _settingsManager = new SettingsManager(context, this);
         } catch (Exception e) {
             _logger.fatal("Error loading configuration: " + e.getMessage(), e);
             return;
         }
 
-        try {
-            var subProvider = _settingsManager.SettingsRecord.getTagProviderSub();
-            if (subProvider != null) {
-                _tagManagerSubscribe = new TagManager(context, subProvider);
-            }
-        } catch (Exception e) {
-            _logger.fatal("Error configuring Tag Provider: " + e.getMessage(), e);
-            return;
-        }
-
-        try {
-            var subscribeValuePath = _settingsManager.SettingsRecord.getRepresentationSubscribeValuePath();
-            var subscribeTimestampPath = _settingsManager.SettingsRecord.getRepresentationSubscribeTimestampPath();
-            var coder = new JsonCoder(subscribeValuePath, subscribeTimestampPath);
-
-            var host = _settingsManager.SettingsRecord.getBrokerHost();
-            var port = _settingsManager.SettingsRecord.getBrokerPort();
-            var subQos = _settingsManager.SettingsRecord.getBrokerSubscribeQos();;
-            var brokerSubscriptions = _settingsManager.SettingsRecord.getBrokerSubscriptions();
-
-            List<String> subscriptions = new ArrayList<>(Arrays.asList(brokerSubscriptions.split("\r\n")));
-            _mqttManager = new MqttManager(host, port, subQos, coder, subscriptions);
-        } catch (Exception e) {
-            _logger.fatal("Error configuring MQTT client: " + e.getMessage(), e);
-            return;
-        }
-
-        try {
-            if (_tagManagerSubscribe != null) {
-                _mqttManager.DataEventSubscribers.add(_tagManagerSubscribe);
-            }
-        } catch (Exception e) {
-            _logger.fatal("Error setting up module: " + e.getMessage(), e);
-            return;
-        }
-
-        _logger.info("Set up module successfully.");
+        _context = context;
+        String duration = String.format("%.3f", ((double)(System.currentTimeMillis() - startTimeMs)) / 1000);
+        _logger.info("Configured module successfully in " + duration + " seconds.");
     }
 
     @Override
     public void startup(LicenseState activationState) {
-        _logger.info("Starting module...");
-        try {
-            _settingsManager.Startup();
-
-            if (_tagManagerSubscribe != null)
-                _tagManagerSubscribe.Startup();
-
-             _mqttManager.Startup(true);
-
-            _context.getExecutionManager().register(getClass().getName(), "Maintain", this::maintain_mqtt_connection, 5000);
-
-            _logger.info("Module started.");
-        } catch (Exception e) {
-            _logger.fatal("Error starting module.", e);
+        if (_context == null) {
+            _logger.warn("Module was not successfully configured, can not start.");
+            return;
         }
 
+        _logger.info("Starting module...");
+        var startTimeMs = System.currentTimeMillis();
+
+        try {
+            _settingsManager.Startup();
+        } catch (Exception e) {
+            _logger.fatal("Error starting settings manager: " + e.getMessage(), e);
+            try {
+                _settingsManager.Shutdown();
+            } catch (Exception e2) {
+                _logger.error("Error stopping settings manager after failed start: " + e2.getMessage(), e);
+            }
+            return;
+        }
+
+        List<Connection> enabledConnections;
+        try {
+            enabledConnections = _settingsManager.getEnabledConnections(_context);
+        } catch (Exception e) {
+            _logger.fatal("Error getting enabled connections: " + e.getMessage(), e);
+            return;
+        }
+
+        for (var connection : enabledConnections) {
+            try {
+                connection.Start(_context);
+                _connections.add(connection);
+            } catch (Exception e) {
+                _logger.warn("Could not establish " + connection.name + ": " + e.getMessage(), e);
+            }
+        }
+        for (var connection : _connections) {
+            enabledConnections.remove(connection);
+        }
+        var connectionFailed = !enabledConnections.isEmpty();
+
+        boolean registerMaintainTaskFailed = false;
+        try {
+            _context.getExecutionManager().register(getClass().getName(), "Maintain", this::maintain_mqtt_connection, 5000);
+        } catch (Exception e) {
+            _logger.fatal("Error registering Maintain task: " + e.getMessage(), e);
+            registerMaintainTaskFailed = true;
+        }
+
+        if (connectionFailed || registerMaintainTaskFailed) {
+            if (!enabledConnections.isEmpty()) {
+                _logger.fatal("Failed to establish a connection.");
+                for (var connection : _connections) {
+                    try {
+                        connection.Start(_context);
+                        _connections.add(connection);
+                    } catch (Exception e) {
+                        _logger.warn("Could not disconnect " + connection.name +
+                                " after failed connect: "+ e.getMessage(), e);
+                    }
+                }
+                _connections.clear();
+                return;
+            }
+            if (!registerMaintainTaskFailed)
+            {
+                try {
+                    _context.getExecutionManager().unRegister(getClass().getName(), "Maintain");
+                } catch (Exception e) {
+                    _logger.warn("Error unregistering Maintain task: " + e.getMessage(), e);
+                }
+            }
+            return;
+        }
+
+        String duration = String.format("%.3f", ((double)(System.currentTimeMillis() - startTimeMs)) / 1000);
+        _logger.info("Module started in " + duration + " seconds.");
     }
 
     @Override
     public void shutdown() {
         _logger.info("Stopping module...");
+        var startTimeMs = System.currentTimeMillis();
+
         try {
-            if (_tagManagerSubscribe != null) {
-                _tagManagerSubscribe.Shutdown();
-                _tagManagerSubscribe = null;
-            }
-            if (_mqttManager != null) {
-                _mqttManager.Shutdown();
-                _mqttManager = null;
-            }
-            if (_settingsManager != null) {
-                _settingsManager.Shutdown();
-                _settingsManager = null;
-            }
-            if (_context != null) {
-                _context.getExecutionManager().unRegister(getClass().getName(), "Maintain");
-            }
-            _logger.info("Stopped module.");
+            _context.getExecutionManager().unRegister(getClass().getName(), "TagBatchProcessor");
         } catch (Exception e) {
-            _logger.error("Error stopping module.", e);
+            _logger.warn("Error unregistering TagBatchProcessor task: " + e.getMessage(), e);
         }
+
+        try {
+            _context.getExecutionManager().unRegister(getClass().getName(), "Maintain");
+        } catch (Exception e) {
+            _logger.warn("Error unregistering Maintain task: " + e.getMessage(), e);
+        }
+
+        for (var connection : _connections) {
+            try {
+                connection.Stop();
+            } catch (Exception e) {
+                _logger.warn("Error disconnecting " + connection.name + ": "+ e.getMessage(), e);
+            }
+        }
+        _connections.clear();
+
+        String duration = String.format("%.3f", ((double)(System.currentTimeMillis() - startTimeMs)) / 1000);
+        _logger.info("Stopped module in " + duration + " seconds.");
     }
 
     private synchronized void maintain_mqtt_connection() {
-        if (_mqttManager != null) {
-            if (!_mqttManager.IsConnected()) {
-                _mqttManager.Reconnect();
-            }
+        for (var connection : _connections){
+            connection.maintain();
         }
     }
-
     public boolean isFreeModule() {
         return true;
     }
