@@ -15,7 +15,7 @@
     </modules>
 
     <properties>
-        <ignition-platform-version>8.1.40-SNAPSHOT</ignition-platform-version>
+        <ignition-platform-version>8.1.40</ignition-platform-version>
         <ignition-sdk-version>${ignition-platform-version}</ignition-sdk-version>
         <module-name>Hydra-MQTT</module-name>
         <module-description>A MQTT connector.</module-description>

@@ -7,7 +7,7 @@ import com.inductiveautomation.ignition.gateway.web.models.ConfigCategory;
 
 public class SettingsCategory {
 
-    public static final String CATEGORY_NAME = "MyAppCat";
+    public static final String CATEGORY_NAME = "Hydra-MQTT";
 
     public static final String BUNDLE_FILE_NAME = SettingsCategory.class.getSimpleName();
 

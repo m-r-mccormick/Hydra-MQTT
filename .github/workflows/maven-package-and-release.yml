@@ -55,6 +55,34 @@ jobs:
           echo "GIT_COMMIT_URL=${GIT_COMMIT_URL}" >> ${ENV_FILE}
           
           RELEASE_VERSION=$(cat src/version | xargs)
+          
+          # Get the next release candidate (RC) number for the prerelease
+          echo "RELEASE_VERSION: ${RELEASE_VERSION}"
+          EXISTING_VERSIONS=$(git ls-remote --tags origin | grep "refs/tags/v${RELEASE_VERSION}" | awk '{ print $2 }' | sort)
+          echo "EXISTING_VERSIONS: ${EXISTING_VERSIONS}"
+          EXISTING_RELEASE_VERSIONS=$(git ls-remote --tags origin | grep "refs/tags/v${RELEASE_VERSION}$" | awk '{ print $2 }' | sort)
+          echo "EXISTING_RELEASE_VERSIONS: ${EXISTING_RELEASE_VERSIONS}"
+          if [ ! -z "${EXISTING_RELEASE_VERSIONS}" ]; then
+          	echo "Error: Release version ${RELEASE_VERSION} already exists"
+          	exit 1
+          fi
+          EXISTING_PRERELEASE_VERSIONS=$(echo "${EXISTING_VERSIONS}" | sed 's:refs/tags/v${RELEASE_VERSION}::g' | grep ".*-rc" | sort)
+          echo "EXISTING_PRERELEASE_VERSIONS: ${EXISTING_PRERELEASE_VERSIONS}"
+          EXISTING_RCS=$(echo "${EXISTING_PRERELEASE_VERSIONS}" | sed 's/.*-rc//g' | sort)
+          echo "EXISTING_RCS: ${EXISTING_RCS}"
+          LAST_RC=0
+          if [ ! -z "${EXISTING_RCS}" ]; then
+          	LAST_RC=$(echo "${EXISTING_RCS}" | sort | tail -n1)
+          fi
+          echo "LAST_RC: ${LAST_RC}"
+          NEW_RC=${LAST_RC}
+          ((NEW_RC+=1))
+          echo "NEW_RC: ${NEW_RC}"
+          if [ "${NEW_RC}" -gt 9 ]; then
+          	echo "RC Limit Exceeded"
+          	exit 1
+          fi
+          
           if [ "${EVENT_NAME}" == "push" ]; then
             GIT_BRANCH_NAME=$(echo "${GIT_BRANCH}" | sed 's:^refs/heads/::g')
             GIT_BRANCH_URL="https://github.com/${GIT_REPOSITORY}/tree/${GIT_BRANCH_NAME}"
@@ -64,7 +92,7 @@ jobs:
           
             if [ "${GIT_BRANCH_NAME}" != "main" ]; then
               BUILD_CONFIG="PRERELEASE"
-              RELEASE_VERSION="${RELEASE_VERSION}-beta"
+              RELEASE_VERSION="${RELEASE_VERSION}-rc${NEW_RC}"
             fi
           
           elif [ "${EVENT_NAME}" == "pull_request" ]; then
@@ -76,11 +104,12 @@ jobs:
           
             if [ "${GIT_PULL_REQUEST_TARGET_BRANCH}" != "main" ]; then
               BUILD_CONFIG="PRERELEASE"
-              RELEASE_VERSION="${RELEASE_VERSION}-beta"
+              RELEASE_VERSION="${RELEASE_VERSION}-rc${NEW_RC}"
             fi
           
           else
             echo "EVENT_NAME is not 'push' or 'pull_request'"
+            exit 1
           fi
           
           echo "BUILD_CONFIG=${BUILD_CONFIG}" >> ${ENV_FILE}
@@ -124,6 +153,10 @@ jobs:
 
       - name: Check Release Version
         run: |
+          echo "RELEASE_IS_PRERELEASE: ${{ env.RELEASE_IS_PRERELEASE }}"
+          echo "RELEASE_NAME: ${{ env.RELEASE_NAME }}"
+          echo "RELEASE_TAG_NAME: ${{ env.RELEASE_TAG_NAME }}"
+          
           if git ls-remote --tags origin | grep -q "refs/tags/${{ env.RELEASE_TAG_NAME }}$"; then
             >&2 echo "Error: Tag ${{ env.RELEASE_TAG_NAME }} already exists"
             exit 1

@@ -1,15 +1,19 @@
 package com.mrmccormick.ignition.hydra.mqtt.settings;
 
+import com.mrmccormick.ignition.hydra.mqtt.Connection;
 import com.mrmccormick.ignition.hydra.mqtt.GatewayHook;
 
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.ignition.gateway.web.models.ConfigCategory;
 import com.inductiveautomation.ignition.gateway.web.models.IConfigTab;
-
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import org.apache.log4j.Logger;
 
 public class SettingsManager {
+
+    private final Logger _logger = GatewayHook.GetLogger(getClass());
 
     public static final List<ConfigCategory> ConfigCategories = List.of(
             SettingsCategory.CONFIG_CATEGORY
@@ -19,34 +23,49 @@ public class SettingsManager {
             SettingsPageX.CONFIG_ENTRY
     );
 
-    public final SettingsRecordX SettingsRecord;
+    public final List<IConnectSettings> SettingsBrokers = new ArrayList<>();
 
     public SettingsManager(GatewayContext context, GatewayHook gatewayHook) throws Exception {
         SettingsCategory.Setup(gatewayHook);
         SettingsPageX.Setup(gatewayHook);
 
-        // Update Record Schemas
         try {
             SettingsRecordX.UpdateSchema(context);
         } catch (SQLException e) {
             throw new Exception("Error updating configuration schema.", e);
         }
 
-        // Try to create settings
         try {
-            SettingsRecordX settingsRecord = context.getLocalPersistenceInterface().createNew(SettingsRecordX.META);
+            var settingsRecord = context.getLocalPersistenceInterface().createNew(SettingsRecordX.META);
             settingsRecord.setId(0L);
             SettingsRecordX.SetDefaults(settingsRecord);
-
-            // If setting values don't already exist, set them. (Doesn't overwrite existing values)
             context.getSchemaUpdater().ensureRecordExists(settingsRecord);
         } catch (Exception e) {
             throw new Exception("Error initializing configuration.", e);
         }
 
-        // Get settings
-        SettingsRecord = context.getLocalPersistenceInterface().find(SettingsRecordX.META, 0L);
-        SettingsRecord.Validate();
+        SettingsBrokers.add(context.getLocalPersistenceInterface().find(SettingsRecordX.META, 0L));
+    }
+
+    public List<Connection> getEnabledConnections(GatewayContext context) throws Exception {
+        List<Connection> enabledConnections = new ArrayList<>();
+
+        var getFailed = false;
+        for (var setting : SettingsBrokers) {
+            if (setting.getEnabled())
+            {
+                try {
+                    enabledConnections.add(setting.getConnection(context));
+                } catch (Exception e) {
+                    getFailed = true;
+                    _logger.error(e.getMessage());
+                }
+            }
+        }
+        if (getFailed)
+            throw new Exception("At least one Connection failed to configure.");
+
+        return enabledConnections;
     }
 
     public void Startup() {
