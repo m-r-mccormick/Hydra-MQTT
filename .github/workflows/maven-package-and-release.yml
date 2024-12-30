@@ -1,0 +1,240 @@
+name: Module Package and Release
+
+on:
+  push:
+    branches:
+      - main
+      - prerelease
+  pull_request:
+    branches:
+      - main
+      - prerelease
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+
+      - name: Build
+        env:
+          BUILD_CONFIG: "RELEASE"
+          BUILD_NUMBER: "${{ github.run_number }}"
+          EVENT_NAME: "${{ github.event_name }}"
+          GIT_REPOSITORY: "${{ github.repository }}"
+          GIT_REPOSITORY_URL: "https://github.com/${{ github.repository }}"
+          GIT_COMMIT_HASH: "${{ github.sha }}"
+          GIT_COMMIT_URL: "https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+          GIT_BRANCH: "${{ github.ref }}"
+          GIT_PULL_REQUEST_ID: "${{ github.event.pull_request.number }}"
+          GIT_PULL_REQUEST_URL: "https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
+          GIT_PULL_REQUEST_HASH: "${{ github.event.pull_request.head.sha }}"
+          GIT_PULL_REQUEST_COMMIT_URL: "https://github.com/${{ github.repository }}/pull/${{ github.event.pull_request.number }}/commits/${{ github.event.pull_request.head.sha }}"
+          GIT_PULL_REQUEST_SOURCE_BRANCH: "${{ github.head_ref }}"
+          GIT_PULL_REQUEST_TARGET_BRANCH: "${{ github.base_ref }}"
+          RELEASE_IS_PRERELEASE: "${{ github.ref != 'refs/heads/main' }}"
+          RELEASE_URL: "https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+        run: |
+          ENV_FILE="src/cicd.env"
+          if [ -f "${ENV_FILE}" ]; then
+            rm "${ENV_FILE}"
+          fi
+          
+          echo "GIT_REPOSITORY=${GIT_REPOSITORY}" >> ${ENV_FILE}
+          echo "GIT_REPOSITORY_URL=${GIT_REPOSITORY_URL}" >> ${ENV_FILE}
+          GIT_COMMIT_HASH_SHORT="$(git rev-parse --short ${GIT_COMMIT_HASH})"
+          echo "GIT_COMMIT_HASH=${GIT_COMMIT_HASH}" >> ${ENV_FILE}
+          echo "GIT_COMMIT_HASH_SHORT=${GIT_COMMIT_HASH_SHORT}" >> ${ENV_FILE}
+          echo "GIT_COMMIT_URL=${GIT_COMMIT_URL}" >> ${ENV_FILE}
+          
+          RELEASE_VERSION=$(cat src/version | xargs)
+          
+          # Get the next release candidate (RC) number for the prerelease
+          echo "RELEASE_VERSION: ${RELEASE_VERSION}"
+          EXISTING_VERSIONS=$(git ls-remote --tags origin | grep "refs/tags/v${RELEASE_VERSION}" | awk '{ print $2 }' | sort)
+          echo "EXISTING_VERSIONS: ${EXISTING_VERSIONS}"
+          EXISTING_RELEASE_VERSIONS=$(git ls-remote --tags origin | grep "refs/tags/v${RELEASE_VERSION}$" | awk '{ print $2 }' | sort)
+          echo "EXISTING_RELEASE_VERSIONS: ${EXISTING_RELEASE_VERSIONS}"
+          if [ ! -z "${EXISTING_RELEASE_VERSIONS}" ]; then
+          	echo "Error: Release version ${RELEASE_VERSION} already exists"
+          	exit 1
+          fi
+          EXISTING_PRERELEASE_VERSIONS=$(echo "${EXISTING_VERSIONS}" | sed 's:refs/tags/v${RELEASE_VERSION}::g' | grep ".*-rc" | sort)
+          echo "EXISTING_PRERELEASE_VERSIONS: ${EXISTING_PRERELEASE_VERSIONS}"
+          EXISTING_RCS=$(echo "${EXISTING_PRERELEASE_VERSIONS}" | sed 's/.*-rc//g' | sort)
+          echo "EXISTING_RCS: ${EXISTING_RCS}"
+          LAST_RC=0
+          if [ ! -z "${EXISTING_RCS}" ]; then
+          	LAST_RC=$(echo "${EXISTING_RCS}" | sort | tail -n1)
+          fi
+          echo "LAST_RC: ${LAST_RC}"
+          NEW_RC=${LAST_RC}
+          ((NEW_RC+=1))
+          echo "NEW_RC: ${NEW_RC}"
+          if [ "${NEW_RC}" -gt 9 ]; then
+          	echo "RC Limit Exceeded"
+          	exit 1
+          fi
+          
+          if [ "${EVENT_NAME}" == "push" ]; then
+            GIT_BRANCH_NAME=$(echo "${GIT_BRANCH}" | sed 's:^refs/heads/::g')
+            GIT_BRANCH_URL="https://github.com/${GIT_REPOSITORY}/tree/${GIT_BRANCH_NAME}"
+            echo "GIT_BRANCH=${GIT_BRANCH}" >> ${ENV_FILE}
+            echo "GIT_BRANCH_NAME=${GIT_BRANCH_NAME}" >> ${ENV_FILE}
+            echo "GIT_BRANCH_URL=${GIT_BRANCH_URL}" >> ${ENV_FILE}
+          
+            if [ "${GIT_BRANCH_NAME}" != "main" ]; then
+              BUILD_CONFIG="PRERELEASE"
+              RELEASE_VERSION="${RELEASE_VERSION}-rc${NEW_RC}"
+            fi
+          
+          elif [ "${EVENT_NAME}" == "pull_request" ]; then
+            echo "GIT_PULL_REQUEST_ID=${GIT_PULL_REQUEST_ID}" >> ${ENV_FILE}
+            echo "GIT_PULL_REQUEST_URL=${GIT_PULL_REQUEST_URL}" >> ${ENV_FILE}
+            echo "GIT_PULL_REQUEST_COMMIT_URL=${GIT_PULL_REQUEST_COMMIT_URL}" >> ${ENV_FILE}
+            echo "GIT_PULL_REQUEST_SOURCE_BRANCH=${GIT_PULL_REQUEST_SOURCE_BRANCH}" >> ${ENV_FILE}
+            echo "GIT_PULL_REQUEST_TARGET_BRANCH=${GIT_PULL_REQUEST_TARGET_BRANCH}" >> ${ENV_FILE}
+          
+            if [ "${GIT_PULL_REQUEST_TARGET_BRANCH}" != "main" ]; then
+              BUILD_CONFIG="PRERELEASE"
+              RELEASE_VERSION="${RELEASE_VERSION}-rc${NEW_RC}"
+            fi
+          
+          else
+            echo "EVENT_NAME is not 'push' or 'pull_request'"
+            exit 1
+          fi
+          
+          echo "BUILD_CONFIG=${BUILD_CONFIG}" >> ${ENV_FILE}
+          echo "BUILD_NUMBER=${BUILD_NUMBER}" >> ${ENV_FILE}
+          
+          RELEASE_DATE=$(date "+%Y-%m-%d")
+          RELEASE_TAG_NAME="v${RELEASE_VERSION}"
+          RELEASE_NAME="v${RELEASE_VERSION} (${RELEASE_DATE})"
+          echo "RELEASE_VERSION=${RELEASE_VERSION}" >> ${ENV_FILE}
+          echo "RELEASE_DATE=${RELEASE_DATE}" >> ${ENV_FILE}
+          echo "RELEASE_TAG_NAME=${RELEASE_TAG_NAME}" >> ${ENV_FILE}
+          echo "RELEASE_NAME=${RELEASE_NAME}" >> ${ENV_FILE}
+          echo "RELEASE_IS_PRERELEASE=${RELEASE_IS_PRERELEASE}" >> ${ENV_FILE}
+          echo "RELEASE_URL=${RELEASE_URL}" >> ${ENV_FILE}
+  
+          cat ${ENV_FILE}
+          
+          echo "RELEASE_IS_PRERELEASE=${RELEASE_IS_PRERELEASE}" >> $GITHUB_ENV
+          echo "RELEASE_TAG_NAME=${RELEASE_TAG_NAME}" >> $GITHUB_ENV
+          echo "RELEASE_NAME=${RELEASE_NAME}" >> $GITHUB_ENV
+          
+          SECRETS_DIR="src/secrets/"
+          mkdir "${SECRETS_DIR}"
+          echo "${{ secrets.ALIAS_NAME }}" | base64 -d > ${SECRETS_DIR}/alias_name.txt
+          echo "${{ secrets.ALIAS_PASSWORD }}" | base64 -d > ${SECRETS_DIR}/alias_password.txt
+          echo "${{ secrets.CHAIN }}" | base64 -d > ${SECRETS_DIR}/chain.p7b
+          echo "${{ secrets.ENV }}" | base64 -d > ${SECRETS_DIR}/env
+          echo "${{ secrets.KEYSTORE }}" | base64 -d > ${SECRETS_DIR}/keystore.jks
+          echo "${{ secrets.KEYSTORE_PASSWORD }}" | base64 -d > ${SECRETS_DIR}/keystore_password.txt
+          
+          BUILD_CONFIG="${BUILD_CONFIG}" make -C src
+
+      - name: Test
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          echo "Tested!"
+          echo "Branch (github.ref): ${{ github.ref }}"
+          echo "Commit Sha (github.sha): ${{ github.sha }}"
+          echo "Commit Hash (steps.set_output.outputs.commit_hash): ${{ steps.set_output.outputs.commit_hash }}"
+
+      - name: Check Release Version
+        run: |
+          echo "RELEASE_IS_PRERELEASE: ${{ env.RELEASE_IS_PRERELEASE }}"
+          echo "RELEASE_NAME: ${{ env.RELEASE_NAME }}"
+          echo "RELEASE_TAG_NAME: ${{ env.RELEASE_TAG_NAME }}"
+          
+          if git ls-remote --tags origin | grep -q "refs/tags/${{ env.RELEASE_TAG_NAME }}$"; then
+            >&2 echo "Error: Tag ${{ env.RELEASE_TAG_NAME }} already exists"
+            exit 1
+          else
+            echo "Tag ${TAG_NAME} does not exist"
+          fi
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        if: >
+          github.event_name == 'push' && (
+            startsWith(github.ref, 'refs/heads/main')
+          ||
+            startsWith(github.ref, 'refs/heads/prerelease')
+          )
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.RELEASE_TAG_NAME }}
+          release_name: ${{ env.RELEASE_NAME }}
+          draft: false
+          prerelease: ${{ env.RELEASE_IS_PRERELEASE }}
+
+      - name: Upload Artifacts to Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: >
+          github.event_name == 'push' && (
+            startsWith(github.ref, 'refs/heads/main')
+          ||
+            startsWith(github.ref, 'refs/heads/prerelease')
+          )
+        shell: bash
+        run: |
+          ARTIFACT_SEARCH_PATH="src/"
+          echo "Artifact Search Path: ${ARTIFACT_SEARCH_PATH}"
+          
+          echo ""
+          echo "Artifacts:"
+          ARTIFACT_PATHS=$(find "${ARTIFACT_SEARCH_PATH}" -maxdepth 1 -type f -name '*.modl')
+          for ARTIFACT_PATH in ${ARTIFACT_PATHS}; do
+            echo " - ${ARTIFACT_PATH}..."
+          done
+          
+          echo ""
+          echo "Uploading Artifacts..."
+          for ARTIFACT_PATH in ${ARTIFACT_PATHS}; do
+            ARTIFACT_NAME=$(basename "${ARTIFACT_PATH}")
+            ARTIFACT_NAME="${ARTIFACT_NAME}"
+            echo " - Uploading ${ARTIFACT_NAME}..."
+          
+            RAW_UPLOAD_URL="${{ steps.create_release.outputs.upload_url }}"
+            # Remove ...assets{?name,label} from the end of the url
+            BASE_UPLOAD_URL="$(echo "${RAW_UPLOAD_URL}" | sed "s/assets.*/assets/g")"
+            # Add the artifact name to the URL
+            UPLOAD_URL="${BASE_UPLOAD_URL}?name=${ARTIFACT_NAME}"
+
+            HTTP_CODE=$(curl \
+              --silent \
+              --output curl_output.txt \
+              --write-out "%{http_code}" \
+              -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @${ARTIFACT_PATH} \
+              "${UPLOAD_URL}" \
+              ) || true
+          
+            if [[ ${HTTP_CODE} -lt 200 || ${HTTP_CODE} -gt 299 ]] ; then
+              >&2 cat curl_output.txt
+              >&2 echo "Could not upload ${ARTIFACT_NAME}"
+              exit 1
+            fi
+            rm curl_output.txt
+            
+            echo "   Uploaded ${ARTIFACT_NAME} Successfully"
+          done
+          
+          echo ""
+          echo "Uploaded All Artifacts Successfully"
