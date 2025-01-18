@@ -6,13 +6,15 @@ title: 'Broker'
 
 This option specifies the `IP Address` or `DNS Name` of the MQTT broker.
 
-| Location | Type | Provider | Address |
-| -------- | ---- | -------- | ------- |
-| Local Network | `IP Address` | You | `192.168.1.105` |
-| Internet | `DNS Name` | Eclipse | `mqtt.eclipse.org` |
-| Internet | `DNS Name` | Mosquitto | `test.mosquitto.org` |
-| Internet | `DNS Name` | HiveMQ | `broker.hivemq.com` |
-| Docker Network | `DNS Name` | [Real-Time Manufacturing Datasets](https://github.com/m-r-mccormick/Real-Time-Manufacturing-Datasets){ target=_blank } | `broker` |
+| Location       | Type | Provider | Address              |
+|----------------| ---- | -------- |----------------------|
+| Localhost      | `IP Address` | You | `127.0.0.1`          |
+| Localhost      | `DNS Nam` | You | `localhost`          |
+| Local Network  | `IP Address` | You | `192.168.1.105`      |
+| Internet       | `DNS Name` | Eclipse | `mqtt.eclipse.org`   |
+| Internet       | `DNS Name` | Mosquitto | `test.mosquitto.org` |
+| Internet       | `DNS Name` | HiveMQ | `broker.hivemq.com`  |
+| Docker Network | `DNS Name` | [Real-Time Manufacturing Datasets](https://github.com/m-r-mccormick/Real-Time-Manufacturing-Datasets){ target=_blank } | `broker`             |
 
 ???+ example
 
@@ -25,6 +27,8 @@ This option specifies the `IP Address` or `DNS Name` of the MQTT broker.
 # Port
 
 This option specifies the `Port` that the broker service is using on the host. While not a standard, a convention is that brokers with no security typically use port `1883`, while brokers using Transport Layer Security (TLS) typically use port `8883`.
+
+More information regarding security can be found in the [Security](02-Security.md) section.
 
 | Type | Port |
 | ---- | ---- |

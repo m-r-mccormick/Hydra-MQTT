@@ -1,0 +1,46 @@
+services:
+
+  ignition:
+    image: inductiveautomation/ignition:8.1
+    container_name: hydramqtt_ignition
+    hostname: ignition
+    restart: unless-stopped
+#    networks:
+#      - rtmd-network
+    ports:
+      - '8088:8088'
+    command: >
+      -n Hydra-MQTT
+    environment:
+      - DISABLE_QUICKSTART=true
+      - GATEWAY_ADMIN_USERNAME=admin
+      - GATEWAY_ADMIN_PASSWORD=password
+      - IGNITION_EDITION=standard
+      - GATEWAY_MODULES_ENABLED=all
+#    volumes:
+#      - hydramqtt_ignition_data:/usr/local/bin/ignition/data
+
+  broker:
+    image: emqx/emqx
+    container_name: hydramqtt_broker
+    hostname: broker
+    restart: unless-stopped
+#    networks:
+#      - rtmd-network
+    ports:
+      - '1883:1883'
+      - '18083:18083'
+    environment:
+      - EMQX_DASHBOARD__DEFAULT_USERNAME=admin
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=password
+    volumes:
+      - ./emqx/emqx.conf:/opt/emqx/etc/emqx.conf:ro
+      - ./emqx/acl.conf:/opt/emqx/etc/acl.conf:ro
+
+#volumes:
+#  hydramqtt_ignition_data:
+#    name: 'hydramqtt_ignition_data'
+
+#networks:
+#  rtmd-network:
+#    name: 'rtmd-network'

@@ -17,7 +17,7 @@ When a `Tag` in the specified `Realtime Tag Provider` changes, the `Tag Path` (i
 
 <div class="grid cards" markdown>
 
--   :fontawesome-solid-tag:{ .middle } __Ignition Tag Provider__{.lg .middle} :fontawesome-solid-arrow-right:{ .middle }
+-   :fontawesome-solid-tag:{ .middle } __Ignition Tag Provider__{.lg .middle}
 
     ---
 
@@ -42,7 +42,7 @@ When a `Tag` in the specified `Realtime Tag Provider` changes, the `Tag Path` (i
     │ │ │ │ │ └─v2: [Tag]
     ```
     
--   :fontawesome-solid-arrow-right:{ .middle } :fontawesome-solid-circle-nodes:{ .middle } __MQTT Broker__{.lg .middle}
+-   :fontawesome-solid-circle-nodes:{ .middle } __MQTT Broker__{.lg .middle}
 
     ---
 
@@ -83,7 +83,7 @@ If a `Tag` with the specified `Tag Path` does not exist, it will be automaticall
 
 <div class="grid cards" markdown>
 
--   :fontawesome-solid-circle-nodes:{ .middle } __MQTT Broker__{.lg .middle} :fontawesome-solid-arrow-right:{ .middle }
+-   :fontawesome-solid-circle-nodes:{ .middle } __MQTT Broker__{.lg .middle}
 
     ---
 
@@ -108,7 +108,7 @@ If a `Tag` with the specified `Tag Path` does not exist, it will be automaticall
     │ │ │ │ │ └─V2: [Variable]
     ```
 
--   :fontawesome-solid-arrow-right:{ .middle } :fontawesome-solid-tag:{ .middle } __Ignition Tag Provider__{.lg .middle}
+-   :fontawesome-solid-tag:{ .middle } __Ignition Tag Provider__{.lg .middle}
 
     ---
 
