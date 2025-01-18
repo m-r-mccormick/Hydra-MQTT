@@ -1,0 +1,51 @@
+services:
+
+  ignition:
+    image: inductiveautomation/ignition:8.1
+    container_name: hydramqtt_ignition
+    hostname: ignition
+    restart: unless-stopped
+#    networks:
+#      - rtmd-network
+    ports:
+      - '8088:8088'
+    command: >
+      -n Hydra-MQTT
+    environment:
+      - DISABLE_QUICKSTART=true
+      - GATEWAY_ADMIN_USERNAME=admin
+      - GATEWAY_ADMIN_PASSWORD=password
+      - IGNITION_EDITION=standard
+      - TZ=America/New_York
+      - GATEWAY_MODULES_ENABLED=all
+    volumes:
+#      - hydramqtt_ignition_data:/usr/local/bin/ignition/data
+      - ./ignition/secrets/ca.crt:/run/secrets/ca.crt:ro
+      - ./ignition/secrets/client.crt:/run/secrets/client.crt:ro
+      - ./ignition/secrets/client.key:/run/secrets/client.key:ro
+      - ./ignition/secrets/password_file:/run/secrets/password_file:ro
+
+  broker:
+    image: eclipse-mosquitto
+    container_name: hydramqtt_broker
+    hostname: broker
+    restart: unless-stopped
+#    networks:
+#      - rtmd-network
+    ports:
+#      - '1883:1883'
+      - '8883:8883'
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/secrets/ca.crt:/run/secrets/ca.crt:ro
+      - ./mosquitto/secrets/password_file:/run/secrets/password_file:ro
+      - ./mosquitto/secrets/server.crt:/run/secrets/server.crt:ro
+      - ./mosquitto/secrets/server.key:/run/secrets/server.key:ro
+
+#volumes:
+#  hydramqtt_ignition_data:
+#    name: 'hydramqtt_ignition_data'
+
+#networks:
+#  rtmd-network:
+#    name: 'rtmd-network'

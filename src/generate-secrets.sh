@@ -83,5 +83,5 @@ if [ -f "${sign_crt}" ]; then
 fi
 
 echo ""
-echo "Completed"
+echo "Generating Secrets Completed"
 

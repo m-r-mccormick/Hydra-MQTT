@@ -14,9 +14,9 @@
 			<td style="border-top: 0px; width: 250px; padding-left: 20px; padding-right: 20px"><img src="assets/hydra.png" alt="description"></td>
 			<td style="vertical-align:middle; border-top: 0px; font-size-adjust: .68; line-height: 35px; text-align: center">
 				<a target="_blank" href="https://github.com/m-r-mccormick/Hydra-MQTT">Hydra-MQTT</a>
-				is a module for <br>
-				<a target="_blank" href="https://inductiveautomation.com/">Inductive Automation Ignition</a>.
-				It facilitates the utilization of non-Sparkplug MQTT.
+				is a free module for <br>
+				<a target="_blank" href="https://inductiveautomation.com/">Inductive Automation Ignition</a>
+				that facilitates the utilization of non-Sparkplug MQTT.
 			</td>
 		</tr>
 	</table>
@@ -51,7 +51,7 @@
     </p>
 
     <p style="text-align: center">
-    [Getting Started :fontawesome-solid-play:](Pages/Getting Started/01-Overview.md){ .md-button }
+    [Getting Started :fontawesome-solid-play:](Pages/Getting Started/01-Tutorial.md){ .md-button }
     </p>
 
 -   :fontawesome-solid-thumbtack:{ .middle } __Brass Tacks__{.lg .middle}
@@ -63,7 +63,7 @@
     </p>
 
     <p style="text-align: center">
-    [Configuration :fontawesome-solid-gear:](Pages/Configuration/01-Broker.md){ .md-button }
+    [Configuration :fontawesome-solid-gear:](Pages/Configuration/00-Connection.md){ .md-button }
     </p>
 
 </div>

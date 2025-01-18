@@ -40,3 +40,8 @@ module-signer.jar
 # Secrets for Ignition Module Signer
 secrets/
 
+# Build files
+mock/ci.env
+mock/ci.list.new
+config
+config.log

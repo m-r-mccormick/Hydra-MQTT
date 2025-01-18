@@ -1,0 +1,8 @@
+*.crt
+*.key
+*.der
+*.csr
+*.cnf
+*.zip
+password_file
+*hash.json

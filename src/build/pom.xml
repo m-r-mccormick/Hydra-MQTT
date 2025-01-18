@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
  
     <parent>
-        <groupId>com.inductiveautomation.ignition.mrmccormick</groupId>
+        <groupId>com.mrmccormick</groupId>
         <artifactId>module</artifactId>
         <version>0.0.0-SNAPSHOT</version>
     </parent>
@@ -14,7 +14,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.inductiveautomation.ignition.mrmccormick</groupId>
+            <groupId>com.mrmccormick</groupId>
             <artifactId>gateway</artifactId>
             <version>0.0.0-SNAPSHOT</version>
         </dependency>
@@ -44,7 +44,7 @@
                         </projectScope>
                     </projectScopes>
 
-                    <moduleId>com.mrmccormick.ignition.hydra.mqtt.tag-provider</moduleId>
+                    <moduleId>com.mrmccormick.hydra.mqtt</moduleId>
                     <moduleName>${module-name}</moduleName>
                     <moduleDescription>${module-description}</moduleDescription>
                     <moduleVersion>${project.version}</moduleVersion>
@@ -55,7 +55,7 @@
                     <hooks>
                         <hook>
                             <scope>G</scope>
-                            <hookClass>com.mrmccormick.ignition.hydra.mqtt.GatewayHook</hookClass>
+                            <hookClass>com.mrmccormick.hydra.mqtt.GatewayHook</hookClass>
                         </hook>
                     </hooks>
                 </configuration>
