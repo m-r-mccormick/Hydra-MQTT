@@ -136,6 +136,70 @@ This option specifies the format that `Timestamp`s should be published in.
 	```
 	</div>
 
+## Documentation Path
+
+This option specifies the location within a json payload where the `Documentation` should be, with a period (`.`) delimiting levels (i.e., dictionaries) within the payload.
+
+???+ example
+
+	```bash title='Publish Documentation Path'
+	Documentation
+	```
+	<div class="result">
+	```json title='Payload'
+	{
+		"Documentation": "My Documentation"
+	}
+	```
+	</div>
+
+??? example "Nested Example"
+
+	```bash title='Publish Timestamp Path'
+	Observation.Documentation
+	```
+	<div class="result">
+	```json title='Payload'
+	{
+		"Observation": {
+			"Documentation": "My Documentation"
+		}
+	}
+	```
+	</div>
+
+## Engineering Units Path
+
+This option specifies the location within a json payload where the `Engineering Units` should be, with a period (`.`) delimiting levels (i.e., dictionaries) within the payload.
+
+???+ example
+
+	```bash title='Publish Units Path'
+	Units
+	```
+	<div class="result">
+	```json title='Payload'
+	{
+		"Units": "Freedoms Per Eagle"
+	}
+	```
+	</div>
+
+??? example "Nested Example"
+
+	```bash title='Publish Timestamp Path'
+	Observation.Units
+	```
+	<div class="result">
+	```json title='Payload'
+	{
+		"Observation": {
+			"Units": "Freedoms Per Eagle"
+		}
+	}
+	```
+	</div>
+
 
 # Subscribe
 
@@ -328,3 +392,137 @@ This option specifies which format integer `Timestamp`s should be decoded as.
 	}
 	```
 	</div>
+
+## Documentation Paths
+
+This option specifies the multiple location within a json payload where the `Documentation` should be, with a period (`.`)
+delimiting levels (i.e., dictionaries) within the payload.
+
+Each line is a separate path. The specified paths are iterated through from top to bottom, and the first path which
+contains `Documentation` is used.
+
+If `Subscribe Documentation Paths` is defined and is not identified in a received payload, the payload is still
+consumed and missing `Documentation` is silently ignored.
+
+If `Subscribe Documentation Paths` is not defined, `Documentation` is not checked for in received payloads.
+
+???+ example
+
+	```bash title='Subscribe Documentation Paths'
+	Documentation
+	```
+	<div class="result">
+	```json title='Payload'
+	{
+		"Documentation": "My Documentation"
+	}
+	```
+	</div>
+
+??? example "Nested Example"
+
+	```bash title='Subscribe Documentation Paths'
+	Observation.Documentation
+	```
+	<div class="result">
+	```json title='Payload'
+	{
+		"Observation": {
+			"Documentation": "My Documentation"
+		}
+	}
+	```
+	</div>
+
+??? example "Multiple Documentation Paths Example"
+
+	```bash title='Subscribe Documentation Paths'
+	Observation.Documentation
+    Documentation
+    Observation.Nested.Documentation
+	```
+	<div class="result">
+	```json title='Payload'
+	{
+		"Observation": {
+			"Documentation": "My Documentation",
+            "Nested": {
+                "Documentation": "Flux Capacitor Core Temperature"
+            }
+		}
+        "Documentation": "Left Hand Threads Only"
+	}
+	```
+    ```json title='Result'
+	My Documentation
+	```
+	</div>
+
+## Engineering Units Paths
+
+This option specifies the multiple location within a json payload where the `Engineering Units` should be, with a period (`.`)
+delimiting levels (i.e., dictionaries) within the payload.
+
+Each line is a separate path. The specified paths are iterated through from top to bottom, and the first path which
+contains `Units` is used.
+
+If `Subscribe Units Paths` is defined and is not identified in a received payload, the payload is still
+consumed and missing `Units` is silently ignored.
+
+If `Subscribe Units Paths` is not defined, `Units` is not checked for in received payloads.
+
+
+This option specifies the location within a json payload where the `Engineering Units` should be, with a period (`.`) delimiting levels (i.e., dictionaries) within the payload.
+
+???+ example
+
+	```bash title='Subscribe Units Paths'
+	Units
+	```
+	<div class="result">
+	```json title='Payload'
+	{
+		"Units": "Freedoms Per Eagle"
+	}
+	```
+	</div>
+
+??? example "Nested Example"
+
+	```bash title='Subscribe Units Paths'
+	Observation.Units
+	```
+	<div class="result">
+	```json title='Payload'
+	{
+		"Observation": {
+			"Units": "Freedoms Per Eagle"
+		}
+	}
+	```
+	</div>
+
+??? example "Multiple Units Paths Example"
+
+	```bash title='Subscribe Units Paths'
+	Observation.Units
+    Units
+    Observation.Nested.Units
+	```
+	<div class="result">
+	```json title='Payload'
+	{
+		"Observation": {
+			"Units": "Freedoms Per Eagle",
+            "Nested": {
+                "Units": "Furlongs Per Fortnight"
+            }
+		}
+        "Units": "Hampsterwatt Microcenturies"
+	}
+	```
+    ```json title='Result'
+	Freedoms Per Eagle
+	```
+	</div>
+

@@ -1,8 +1,12 @@
 package com.mrmccormick.hydra.mqtt.implementation.actor.connector;
 
+import com.google.common.collect.ImmutableList;
 import com.inductiveautomation.ignition.common.BasicDataset;
+import com.inductiveautomation.ignition.common.BundleUtil;
 import com.inductiveautomation.ignition.common.browsing.BrowseFilter;
 import com.inductiveautomation.ignition.common.config.BasicConfigurationProperty;
+import com.inductiveautomation.ignition.common.config.MutableConfigurationPropertyModel;
+import com.inductiveautomation.ignition.common.config.PropertyModelContributor;
 import com.inductiveautomation.ignition.common.document.Document;
 import com.inductiveautomation.ignition.common.i18n.LocalizedString;
 import com.inductiveautomation.ignition.common.model.values.BasicQualifiedValue;
@@ -24,6 +28,7 @@ import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.ignition.gateway.tags.model.GatewayTagManager;
 import com.mrmccormick.hydra.mqtt.GatewayHook;
 import com.mrmccormick.hydra.mqtt.domain.Event;
+import com.mrmccormick.hydra.mqtt.domain.EventProperty;
 import com.mrmccormick.hydra.mqtt.domain.actor.*;
 import com.mrmccormick.hydra.mqtt.domain.actor.connector.IConnector;
 import com.mrmccormick.hydra.mqtt.ignition.ITagChangeSubscriber;
@@ -32,16 +37,18 @@ import com.mrmccormick.hydra.mqtt.ignition.TagChangeEvent;
 import com.mrmccormick.hydra.mqtt.implementation.ChunkBuffer;
 import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-public class TagEngineConnector extends ActorBase implements IConnector, IRunnable, ITagChangeSubscriber {
+public class TagEngineConnector extends ActorBase implements IConnector, IRunnable, ITagChangeSubscriber, PropertyModelContributor {
 
     public TagEngineConnector(@NotNull String connectionName,
                               @NotNull String name,
                               @NotNull GatewayContext gatewayContext,
                               @NotNull String tagProviderName,
+                              boolean publishPropertiesEnabled,
                               @NotNull IRunnerBuilder runnerBuilder) {
         super(name);
 
@@ -59,6 +66,8 @@ public class TagEngineConnector extends ActorBase implements IConnector, IRunnab
             throw new IllegalArgumentException("tagProviderName can not be null");
         _tagProviderName = tagProviderName;
         _tagProvider = _tagManager.getTagProvider(tagProviderName);
+
+        _publishPropertiesEnabled = publishPropertiesEnabled;
 
         //noinspection ConstantValue
         if (runnerBuilder == null)
@@ -101,6 +110,23 @@ public class TagEngineConnector extends ActorBase implements IConnector, IRunnab
     }
 
     @Override
+    public void configure(@Nullable MutableConfigurationPropertyModel mcpm) {
+        if (mcpm == null)
+            return;
+
+        if (_publishPropertiesEnabled) {
+            try {
+                mcpm.addProperties(_propertyRoutingPublishTopicOverride);
+                mcpm.addProperties(_propertyRoutingPublishEnabled);
+                //noinspection unchecked
+                mcpm.registerAllowedValues(_propertyRoutingPublishEnabled, ImmutableList.of(true, false));
+            } catch (Exception e) {
+                _logger.error("Could not configure routing properties: " + e, e);
+            }
+        }
+    }
+
+    @Override
     public void connect() throws Exception {
         if (_isConnecting) {
             _logger.debug("Connect requested but already connecting. Ignoring connect request.");
@@ -111,6 +137,20 @@ public class TagEngineConnector extends ActorBase implements IConnector, IRunnab
             _logger.debug("Connect requested but already connected. Ignoring connect request.");
             return;
         }
+
+        // Load TagEngineConnector.properties values with 'hydramqtt.' prefix
+        BundleUtil.get().addBundle("hydramqtt", this.getClass(), "TagEngineConnector");
+
+        // Register as a class that contributes properties
+        _tagManager.getConfigManager().registerTagPropertyContributor(this);
+
+        // Initialize properties with values from TagEngineConnector.properties
+        initializeProperty(_propertyRoutingPublishEnabled,
+                EventProperty.RoutingPublishEnabled.name(),
+                Boolean.class, true);
+        initializeProperty(_propertyRoutingPublishTopicOverride,
+                EventProperty.RoutingPublishTopicOverride.name(),
+                String.class, "");
 
         if (!TagChangeActorFactory.singleton.tagProviderWasInitialized(_tagProvider))
             TagChangeActorFactory.singleton.initializeTagProvider(_tagProvider);
@@ -129,6 +169,10 @@ public class TagEngineConnector extends ActorBase implements IConnector, IRunnab
         _isDisconnecting = true;
 
         TagChangeActorFactory.singleton.unSubscribe(this, _tagProvider);
+
+        BundleUtil.get().removeBundle("hydramqtt");
+
+        _tagManager.getConfigManager().unregisterTagPropertyContributor(this);
 
         _isDisconnecting = false;
         _isConnected = false;
@@ -221,6 +265,36 @@ public class TagEngineConnector extends ActorBase implements IConnector, IRunnab
             return;
         }
 
+        Boolean publishEnabled = null;
+        String publishTopicOverride = null;
+        var tagProperties = tagConfig.getTagProperties();
+        if (_publishPropertiesEnabled) {
+            try {
+                //noinspection unchecked
+                publishEnabled = (Boolean) tagProperties.get(_propertyRoutingPublishEnabled);
+            } catch (Exception e) {
+                _logger.warn("PublishEnabled property returned non-Boolean value: " + e.getMessage(), e);
+            }
+
+            try {
+                //noinspection unchecked
+                publishTopicOverride = (String) tagProperties.get(_propertyRoutingPublishTopicOverride);
+            } catch (Exception e) {
+                _logger.warn("PublishTopic property returned non-String value: " + e.getMessage(), e);
+            }
+        }
+
+        if (publishEnabled != null && !publishEnabled) {
+            return;
+        }
+
+        if (publishEnabled != null)
+            properties.put(EventProperty.RoutingPublishEnabled.name(), publishEnabled);
+        if (publishTopicOverride != null)
+            properties.put(EventProperty.RoutingPublishTopicOverride.name(), publishTopicOverride);
+        properties.put(EventProperty.Documentation.name(), tagProperties.get(WellKnownTagProps.Documentation));
+        properties.put(EventProperty.EngineeringUnits.name(), tagProperties.get(WellKnownTagProps.EngUnit));
+
         var timestamp = tagChangeEvent.value.getTimestamp();
         var value = tagChangeEvent.value.getValue();
 
@@ -279,6 +353,11 @@ public class TagEngineConnector extends ActorBase implements IConnector, IRunnab
     private final @NotNull ChunkBuffer<TagChangeEvent> _outboundBuffer;
     private volatile boolean _outboundBufferClearAcknowledged = false;
     private volatile boolean _outboundBufferClearFlag = false;
+    private static final BasicConfigurationProperty _propertyRoutingPublishEnabled =
+            new BasicConfigurationProperty<Boolean>();
+    private static final BasicConfigurationProperty _propertyRoutingPublishTopicOverride =
+            new BasicConfigurationProperty<String>();
+    private final boolean _publishPropertiesEnabled;
     private final IRunner _runner;
     private final GatewayTagManager _tagManager;
     private final TagProvider _tagProvider;
@@ -484,6 +563,16 @@ public class TagEngineConnector extends ActorBase implements IConnector, IRunnab
             // Tag has changed type
             needToUpdateTagConfig = true;
             tagConfig.set(WellKnownTagProps.DataType, newTagDataType);
+        }
+
+        if (event.hasProperty(EventProperty.Documentation.name())) {
+            tagConfig.set(WellKnownTagProps.Documentation, (String) event.getPropertyValue(EventProperty.Documentation.name()));
+            needToUpdateTagConfig = true;
+        }
+
+        if (event.hasProperty(EventProperty.EngineeringUnits.name())) {
+            tagConfig.set(WellKnownTagProps.EngUnit, (String) event.getPropertyValue(EventProperty.EngineeringUnits.name()));
+            needToUpdateTagConfig = true;
         }
 
         // If the tag config has changed and needs updated, update it.
