@@ -21,12 +21,17 @@ public class ConnectionSettings {
     public final @Nullable String brokerSubscriptions;
     public final @Nullable Boolean connectionEnabled;
     public final @Nullable Boolean experimentalGlobalSubscription;
+    public final @Nullable String representationPublishDocumentationPath;
     public final @Nullable TimestampFormat representationPublishTimestampFormat;
     public final @Nullable String representationPublishTimestampPath;
+    public final @Nullable String representationPublishUnitsPath;
     public final @Nullable String representationPublishValuePath;
+    public final @Nullable String representationSubscribeDocumentationPaths;
     public final @Nullable TimestampIntegerFormat representationSubscribeTimestampIntegerFormat;
     public final @Nullable String representationSubscribeTimestampPaths;
+    public final @Nullable String representationSubscribeUnitsPaths;
     public final @Nullable String representationSubscribeValuePaths;
+    public final @Nullable Boolean routingPublishPropertiesEnabled;
     public final @Nullable String routingPublishTopicSuffix;
     public final @Nullable String tagProviderPub;
     public final @Nullable String tagProviderSub;
@@ -42,12 +47,17 @@ public class ConnectionSettings {
             @Nullable String tagProviderPub,
             @Nullable String tagProviderSub,
             @Nullable String routingPublishTopicSuffix,
+            @Nullable Boolean routingPublishPropertiesEnabled,
             @Nullable String representationPublishValuePath,
             @Nullable String representationPublishTimestampPath,
             @Nullable TimestampFormat representationPublishTimestampFormat,
+            @Nullable String representationPublishDocumentationPath,
+            @Nullable String representationPublishUnitsPath,
             @Nullable String representationSubscribeValuePaths,
             @Nullable String representationSubscribeTimestampPaths,
             @Nullable TimestampIntegerFormat representationSubscribeTimestampIntegerFormat,
+            @Nullable String representationSubscribeDocumentationPaths,
+            @Nullable String representationSubscribeUnitsPaths,
             @Nullable Boolean experimentalGlobalSubscription
     ) {
         //noinspection ConstantValue
@@ -67,13 +77,18 @@ public class ConnectionSettings {
         this.tagProviderSub = tagProviderSub;
 
         this.routingPublishTopicSuffix = routingPublishTopicSuffix;
+        this.routingPublishPropertiesEnabled = routingPublishPropertiesEnabled;
 
         this.representationPublishValuePath = representationPublishValuePath;
         this.representationPublishTimestampPath = representationPublishTimestampPath;
         this.representationPublishTimestampFormat = representationPublishTimestampFormat;
+        this.representationPublishDocumentationPath = representationPublishDocumentationPath;
+        this.representationPublishUnitsPath = representationPublishUnitsPath;
         this.representationSubscribeValuePaths = representationSubscribeValuePaths;
         this.representationSubscribeTimestampPaths = representationSubscribeTimestampPaths;
         this.representationSubscribeTimestampIntegerFormat = representationSubscribeTimestampIntegerFormat;
+        this.representationSubscribeDocumentationPaths = representationSubscribeDocumentationPaths;
+        this.representationSubscribeUnitsPaths = representationSubscribeUnitsPaths;
 
         this.experimentalGlobalSubscription = experimentalGlobalSubscription;
     }
@@ -118,6 +133,9 @@ public class ConnectionSettings {
         if (brokerSubscribeQos == null)
             throw new IllegalArgumentException("brokerSubscribeQos can not be empty");
 
+        if (routingPublishPropertiesEnabled == null)
+            throw new IllegalArgumentException("routingPublishPropertiesEnabled can not be empty");
+
         if (representationPublishValuePath == null || representationPublishValuePath.isEmpty())
             throw new IllegalArgumentException("representationPublishValuePath can not be empty");
         if (representationPublishTimestampPath == null)
@@ -142,6 +160,7 @@ public class ConnectionSettings {
                         "Publish-Only Tag Provider",
                         _gatewayContext,
                         tagProviderPub,
+                        routingPublishPropertiesEnabled,
                         new RunnerBuilder(_gatewayContext)
                 );
 
@@ -151,6 +170,7 @@ public class ConnectionSettings {
                         "Subscribe-Only Tag Provider",
                         _gatewayContext,
                         tagProviderSub,
+                        routingPublishPropertiesEnabled,
                         new RunnerBuilder(_gatewayContext)
                 );
         } else {
@@ -159,22 +179,28 @@ public class ConnectionSettings {
                         connectionName,
                         "Publish-Only Tag Provider",
                         _gatewayContext,
-                        tagProviderPub);
+                        tagProviderPub,
+                        routingPublishPropertiesEnabled);
 
             if (tagProviderSub != null)
                 tagManagerSubscribe = new TagProviderConnector(
                         connectionName,
                         "Subscribe-Only Tag Provider",
                         _gatewayContext,
-                        tagProviderSub);
+                        tagProviderSub,
+                        routingPublishPropertiesEnabled);
         }
 
         JsonCoder coder = new JsonCoder(
                 multilineToPayloadPaths(representationSubscribeValuePaths),
                 multilineToPayloadPaths(representationSubscribeTimestampPaths),
+                multilineToPayloadPaths(representationSubscribeDocumentationPaths),
+                multilineToPayloadPaths(representationSubscribeUnitsPaths),
                 representationSubscribeTimestampIntegerFormat,
                 lineToPayloadPathComponents(representationPublishValuePath),
                 lineToPayloadPathComponents(representationPublishTimestampPath),
+                lineToPayloadPathComponents(representationPublishDocumentationPath),
+                lineToPayloadPathComponents(representationPublishUnitsPath),
                 representationPublishTimestampFormat
         );
 
@@ -310,6 +336,12 @@ public class ConnectionSettings {
             errors.add("The specified Subscribe-Only Tag Provider " + tagProviderSub + " does not exist.");
         if ((tagProviderPub != null && !tagProviderPub.isEmpty()) && tagManager.getTagProvider(tagProviderPub) == null)
             errors.add("The specified Publish-Only Tag Provider " + tagProviderPub + " does not exist.");
+
+
+        // Routing Publish Topic Suffix can be null
+        if (routingPublishPropertiesEnabled == null)
+            errors.add("The value of Publish Routing Properties Enabled can not be empty.");
+
 
         if (representationPublishValuePath == null || representationPublishValuePath.isEmpty())
             errors.addAll(validateLineToPayloadPathComponents("Representation Publish Value Path", representationPublishValuePath));

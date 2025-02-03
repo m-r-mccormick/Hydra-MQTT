@@ -2,6 +2,7 @@ package com.mrmccormick.hydra.mqtt.implementation.actor.connector;
 
 import com.mrmccormick.hydra.mqtt.GatewayHook;
 import com.mrmccormick.hydra.mqtt.domain.Event;
+import com.mrmccormick.hydra.mqtt.domain.EventProperty;
 import com.mrmccormick.hydra.mqtt.domain.actor.IActor;
 import com.mrmccormick.hydra.mqtt.domain.actor.connector.ICoder;
 import com.mrmccormick.hydra.mqtt.domain.actor.connector.IConnector;
@@ -279,13 +280,24 @@ public class PahoMqtt3Connector implements MqttCallback, IConnector {
             return;
         }
 
+        String topicOverride;
+        if (event.hasProperty(EventProperty.RoutingPublishTopicOverride.name()))
+            topicOverride = (String) event.getPropertyValue(EventProperty.RoutingPublishTopicOverride.name());
+        else
+            topicOverride = null;
+
         String topic;
-        // Append the _writeSuffix if available
-        var basePath = event.path;
-        if (_writeSuffix == null) {
-            topic = basePath;
+        if (topicOverride != null && !topicOverride.isEmpty()) {
+            // Do not append _writeSuffix when overriding the topic
+            topic = (String) event.getPropertyValue(EventProperty.RoutingPublishTopicOverride.name());
         } else {
-            topic = basePath + _writeSuffix;
+            // Append the _writeSuffix if available
+            var basePath = event.path;
+            if (_writeSuffix == null) {
+                topic = basePath;
+            } else {
+                topic = basePath + _writeSuffix;
+            }
         }
 
         MqttMessage message = new MqttMessage(payload);
@@ -426,7 +438,7 @@ public class PahoMqtt3Connector implements MqttCallback, IConnector {
     }
 
     private void initialize(boolean cleanSession, boolean newClient) throws Exception {
-        String brokerUrl = "ssl://" + _host + ":" + _port;
+        String brokerUrl = "tcp://" + _host + ":" + _port;
 
         if (newClient || _client == null) {
             String clientId = "Hydra-MQTT-" + UUID.randomUUID();

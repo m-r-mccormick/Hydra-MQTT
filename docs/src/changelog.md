@@ -5,6 +5,15 @@ title: 'Changelog'
 # v0.x
 
 
+## v0.2.0
+
+- __Tag Properties__: Publish and receive tag properties including `Documentation` and `Engineering Units`.
+    - See the [Representation](Pages/Configuration/06-Representation.md) section.
+
+- __Routing Publish Tag Properties__: Disable publishing or override the publish topic on a per-`Tag` basis.
+    - See the [Routing](Pages/Configuration/04-Routing.md#publish-tag-properties-enabled) section.
+
+
 ## v0.1.0
 
 - __Built-In Documentation__: Documentation is now built into the module and can be accessed through the gateway.

@@ -9,6 +9,7 @@ import com.mrmccormick.hydra.mqtt.GatewayHook;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mrmccormick.hydra.mqtt.domain.Event;
+import com.mrmccormick.hydra.mqtt.domain.EventProperty;
 import com.mrmccormick.hydra.mqtt.domain.actor.connector.ICoder;
 import com.mrmccormick.hydra.mqtt.domain.settings.TimestampFormat;
 import com.mrmccormick.hydra.mqtt.domain.settings.TimestampIntegerFormat;
@@ -24,18 +25,26 @@ import java.util.*;
 
 public class JsonCoder implements ICoder {
 
+    public final @NotNull List<String> publishDocumentationPath;
     public final TimestampFormat publishFormat;
     public final @NotNull List<String> publishTimestampPath;
+    public final @NotNull List<String> publishUnitsPath;
     public final @NotNull List<String> publishValuePath;
+    public final @NotNull List<List<String>> subscribeDocumentationPaths;
     public final TimestampIntegerFormat subscribeFormat;
     public final @NotNull List<List<String>> subscribeTimestampPaths;
+    public final @NotNull List<List<String>> subscribeUnitsPaths;
     public final @NotNull List<List<String>> subscribeValuePaths;
 
     public JsonCoder(@NotNull List<List<String>> subscribeValuePaths,
                      @NotNull List<List<String>> subscribeTimestampPaths,
+                     @NotNull List<List<String>> subscribeDocumentationPaths,
+                     @NotNull List<List<String>> subscribeUnitsPaths,
                      @NotNull TimestampIntegerFormat subscribeFormat,
                      @NotNull List<String> publishValuePath,
                      @NotNull List<String> publishTimestampPath,
+                     @NotNull List<String> publishDocumentationPath,
+                     @NotNull List<String> publishUnitsPath,
                      @NotNull TimestampFormat publishFormat
     ) {
         //noinspection ConstantValue
@@ -49,6 +58,16 @@ public class JsonCoder implements ICoder {
         if (subscribeTimestampPaths == null)
             throw new IllegalArgumentException("subscribeTimestampPaths can not be null");
         this.subscribeTimestampPaths = subscribeTimestampPaths;
+
+        //noinspection ConstantValue
+        if (subscribeDocumentationPaths == null)
+            throw new IllegalArgumentException("subscribeDocumentationPaths can not be null");
+        this.subscribeDocumentationPaths = subscribeDocumentationPaths;
+
+        //noinspection ConstantValue
+        if (subscribeUnitsPaths == null)
+            throw new IllegalArgumentException("subscribeUnitsPaths can not be null");
+        this.subscribeUnitsPaths = subscribeUnitsPaths;
 
         //noinspection ConstantValue
         if (subscribeFormat == null)
@@ -66,6 +85,16 @@ public class JsonCoder implements ICoder {
         if (publishTimestampPath == null)
             throw new IllegalArgumentException("publishTimestampPath can not be null");
         this.publishTimestampPath = publishTimestampPath;
+
+        //noinspection ConstantValue
+        if (publishDocumentationPath == null)
+            throw new IllegalArgumentException("publishDocumentationPath can not be null");
+        this.publishDocumentationPath = publishDocumentationPath;
+
+        //noinspection ConstantValue
+        if (publishUnitsPath == null)
+            throw new IllegalArgumentException("publishUnitsPath can not be null");
+        this.publishUnitsPath = publishUnitsPath;
 
         //noinspection ConstantValue
         if (publishFormat == null)
@@ -166,6 +195,39 @@ public class JsonCoder implements ICoder {
         }
 
         Map<String, Object> properties = new HashMap<>();
+        if (!subscribeDocumentationPaths.isEmpty()) {
+            if (o instanceof Map map) {
+                for (var subscribePath : subscribeDocumentationPaths) {
+                    var pathValue = tryGetAtPath(map, subscribePath);
+                    if (pathValue == null)
+                        continue;
+                    Object tryValue = tryDecode(pathValue);
+                    if (tryValue == null)
+                        continue;
+                    if (!(tryValue instanceof String))
+                        continue;
+                    properties.put(EventProperty.Documentation.name(), tryValue);
+                    break;
+                }
+            }
+        }
+        if (!subscribeUnitsPaths.isEmpty()) {
+            if (o instanceof Map map) {
+                for (var subscribePath : subscribeUnitsPaths) {
+                    var pathValue = tryGetAtPath(map, subscribePath);
+                    if (pathValue == null)
+                        continue;
+                    Object tryValue = tryDecode(pathValue);
+                    if (tryValue == null)
+                        continue;
+                    if (!(tryValue instanceof String))
+                        continue;
+                    properties.put(EventProperty.EngineeringUnits.name(), tryValue);
+                    break;
+                }
+            }
+        }
+
         return new Event(path, timestamp, value, properties);
     }
 
@@ -181,6 +243,10 @@ public class JsonCoder implements ICoder {
         Map<String, Object> map = new HashMap<>();
         setAtPath(map, publishTimestampPath, timestamp);
         setAtPath(map, publishValuePath, value);
+        if (!publishDocumentationPath.isEmpty() && event.hasProperty(EventProperty.Documentation.name()))
+            setAtPath(map, publishDocumentationPath, event.getPropertyValue(EventProperty.Documentation.name()));
+        if (!publishUnitsPath.isEmpty() && event.hasProperty(EventProperty.EngineeringUnits.name()))
+            setAtPath(map, publishUnitsPath, event.getPropertyValue(EventProperty.EngineeringUnits.name()));
 
         String json;
         try {

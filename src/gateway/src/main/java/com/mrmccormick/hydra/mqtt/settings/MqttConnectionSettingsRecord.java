@@ -108,12 +108,17 @@ public class MqttConnectionSettingsRecord extends PersistentRecord implements IC
                 getTagProviderPub(),
                 getTagProviderSub(),
                 getBrokerPublishTopicSuffix(),
+                getTagProviderPublishRoutingPropertiesEnabled(),
                 getRepresentationPublishValuePath(),
                 getRepresentationPublishTimestampPath(),
                 getRepresentationPublishTimestampFormat(),
+                getRepresentationPublishDocumentationPath(),
+                getRepresentationPublishUnitsPath(),
                 getRepresentationSubscribeValuePath(),
                 getRepresentationSubscribeTimestampPath(),
                 getRepresentationSubscribeTimestampIntegerFormat(),
+                getRepresentationSubscribeDocumentationPaths(),
+                getRepresentationSubscribeUnitsPaths(),
                 getExperimentalGlobalSubscription()
         );
     }
@@ -275,8 +280,19 @@ public class MqttConnectionSettingsRecord extends PersistentRecord implements IC
         return getString(BrokerPublishTopicSuffix);
     }
 
+
+    public static final BooleanField TagProviderPublishRoutingPropertiesEnabled = new BooleanField(META,
+            "TagProviderPublishRoutingPropertiesEnabled").setDefault(true);
+    public void setTagProviderPublishRoutingPropertiesEnabled(Boolean value) {
+        setBoolean(TagProviderPublishRoutingPropertiesEnabled, value);
+    }
+    public @Nullable Boolean getTagProviderPublishRoutingPropertiesEnabled() {
+        return getBoolean(TagProviderPublishRoutingPropertiesEnabled);
+    }
+
+
     static final Category Routing = new Category(BUNDLE_PREFIX + ".Category.Routing", 1004)
-            .include(BrokerPublishTopicSuffix);
+            .include(BrokerPublishTopicSuffix, TagProviderPublishRoutingPropertiesEnabled);
 
 
 
@@ -347,6 +363,24 @@ public class MqttConnectionSettingsRecord extends PersistentRecord implements IC
     }
 
 
+    public static final StringField RepresentationPublishDocumentationPath = new StringField(META,
+            "RepresentationPublishDocumentationPath").setDefault("");
+    public void setRepresentationPublishDocumentationPath(String value) {
+        setString(RepresentationPublishDocumentationPath, value);
+    }
+    public @Nullable String getRepresentationPublishDocumentationPath() {
+        return getString(RepresentationPublishDocumentationPath);
+    }
+
+    public static final StringField RepresentationPublishUnitsPath = new StringField(META,
+            "RepresentationPublishUnitsPath").setDefault("");
+    public void setRepresentationPublishUnitsPath(String value) {
+        setString(RepresentationPublishUnitsPath, value);
+    }
+    public @Nullable String getRepresentationPublishUnitsPath() {
+        return getString(RepresentationPublishUnitsPath);
+    }
+
     public static final StringField RepresentationSubscribeValuePath = new StringField(META,
             "RepresentationSubscribeValuePath", SFieldFlags.SMANDATORY)
             .setDefault("Value").setMultiLine().addValidator((IValidator) iValidatable -> {
@@ -407,13 +441,37 @@ public class MqttConnectionSettingsRecord extends PersistentRecord implements IC
     }
 
 
+    public static final StringField RepresentationSubscribeDocumentationPaths = new StringField(META,
+            "RepresentationSubscribeDocumentationPaths").setDefault("").setMultiLine();
+    public void setRepresentationSubscribeDocumentationPaths(String value) {
+        setString(RepresentationSubscribeDocumentationPaths, value);
+    }
+    public @Nullable String getRepresentationSubscribeDocumentationPaths() {
+        return getString(RepresentationSubscribeDocumentationPaths);
+    }
+
+
+    public static final StringField RepresentationSubscribeUnitsPaths = new StringField(META,
+            "RepresentationSubscribeUnitsPaths").setDefault("").setMultiLine();
+    public void setRepresentationSubscribeUnitsPaths(String value) {
+        setString(RepresentationSubscribeUnitsPaths, value);
+    }
+    public @Nullable String getRepresentationSubscribeUnitsPaths() {
+        return getString(RepresentationSubscribeUnitsPaths);
+    }
+
+
     static final Category Representation = new Category(BUNDLE_PREFIX + ".Category.Representation", 1006)
             .include(RepresentationPublishValuePath,
                     RepresentationPublishTimestampPath,
                     RepresentationPublishTimestampFormat,
+                    RepresentationPublishDocumentationPath,
+                    RepresentationPublishUnitsPath,
                     RepresentationSubscribeValuePath,
                     RepresentationSubscribeTimestampPath,
-                    RepresentationSubscribeTimestampIntegerFormat
+                    RepresentationSubscribeTimestampIntegerFormat,
+                    RepresentationSubscribeDocumentationPaths,
+                    RepresentationSubscribeUnitsPaths
             );
 
 
