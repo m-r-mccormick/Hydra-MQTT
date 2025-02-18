@@ -7,11 +7,13 @@ import com.mrmccormick.hydra.mqtt.domain.settings.TimestampFormat;
 import com.mrmccormick.hydra.mqtt.domain.settings.TimestampIntegerFormat;
 import com.mrmccormick.hydra.mqtt.implementation.actor.BufferActor;
 import com.mrmccormick.hydra.mqtt.implementation.actor.RunnerBuilder;
+import com.mrmccormick.hydra.mqtt.implementation.actor.TopicRegexActor;
 import com.mrmccormick.hydra.mqtt.implementation.actor.connector.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class ConnectionSettings {
     public final @Nullable String brokerHost;
@@ -21,6 +23,10 @@ public class ConnectionSettings {
     public final @Nullable String brokerSubscriptions;
     public final @Nullable Boolean connectionEnabled;
     public final @Nullable Boolean experimentalGlobalSubscription;
+    public final @Nullable String filterPublishTopicExcludeRegexMatchAny;
+    public final @Nullable String filterPublishTopicIncludeRegexMatchAny;
+    public final @Nullable String filterSubscribeTopicExcludeRegexMatchAny;
+    public final @Nullable String filterSubscribeTopicIncludeRegexMatchAny;
     public final @Nullable String representationPublishDocumentationPath;
     public final @Nullable TimestampFormat representationPublishTimestampFormat;
     public final @Nullable String representationPublishTimestampPath;
@@ -48,6 +54,10 @@ public class ConnectionSettings {
             @Nullable String tagProviderSub,
             @Nullable String routingPublishTopicSuffix,
             @Nullable Boolean routingPublishPropertiesEnabled,
+            @Nullable String filterPublishTopicIncludeRegexMatchAny,
+            @Nullable String filterPublishTopicExcludeRegexMatchAny,
+            @Nullable String filterSubscribeTopicIncludeRegexMatchAny,
+            @Nullable String filterSubscribeTopicExcludeRegexMatchAny,
             @Nullable String representationPublishValuePath,
             @Nullable String representationPublishTimestampPath,
             @Nullable TimestampFormat representationPublishTimestampFormat,
@@ -78,6 +88,11 @@ public class ConnectionSettings {
 
         this.routingPublishTopicSuffix = routingPublishTopicSuffix;
         this.routingPublishPropertiesEnabled = routingPublishPropertiesEnabled;
+
+        this.filterPublishTopicIncludeRegexMatchAny = filterPublishTopicIncludeRegexMatchAny;
+        this.filterPublishTopicExcludeRegexMatchAny = filterPublishTopicExcludeRegexMatchAny;
+        this.filterSubscribeTopicIncludeRegexMatchAny = filterSubscribeTopicIncludeRegexMatchAny;
+        this.filterSubscribeTopicExcludeRegexMatchAny = filterSubscribeTopicExcludeRegexMatchAny;
 
         this.representationPublishValuePath = representationPublishValuePath;
         this.representationPublishTimestampPath = representationPublishTimestampPath;
@@ -226,6 +241,17 @@ public class ConnectionSettings {
         var subBuffer = new BufferActor(connectionName, "Subscribe Buffer", new RunnerBuilder(_gatewayContext));
         subscribeActors.add(subBuffer);
 
+
+        if ((filterSubscribeTopicIncludeRegexMatchAny != null) || (filterSubscribeTopicExcludeRegexMatchAny != null))
+            subscribeActors.add(new TopicRegexActor(
+                    connectionName,
+                    "Subscribe Regex Filter",
+                    multilineToStringList(filterSubscribeTopicIncludeRegexMatchAny),
+                    multilineToStringList(filterSubscribeTopicExcludeRegexMatchAny),
+                    new RunnerBuilder(_gatewayContext)
+            ));
+
+
         // Connect Inbound Subscribe Actors
         if (tagManagerSubscribe != null) {
             connectors.add(tagManagerSubscribe);
@@ -242,6 +268,15 @@ public class ConnectionSettings {
         // Going from Pub Tag Provider to MQTT Client
 
         List<IActor> publishActors = new ArrayList<>();
+
+        if (filterPublishTopicIncludeRegexMatchAny != null || filterPublishTopicExcludeRegexMatchAny != null)
+            publishActors.add(new TopicRegexActor(
+                    connectionName,
+                    "Publish Regex Filter",
+                    multilineToStringList(filterPublishTopicIncludeRegexMatchAny),
+                    multilineToStringList(filterPublishTopicExcludeRegexMatchAny),
+                    new RunnerBuilder(_gatewayContext)
+            ));
 
         // Connect Outbound Publish Actors
         if (tagManagerPublish != null) {
@@ -343,6 +378,16 @@ public class ConnectionSettings {
             errors.add("The value of Publish Routing Properties Enabled can not be empty.");
 
 
+        if (filterPublishTopicIncludeRegexMatchAny != null && !filterPublishTopicIncludeRegexMatchAny.isEmpty())
+            errors.addAll(validateRegexPatterns("Publish Topic Include Regex Match Any.", filterPublishTopicIncludeRegexMatchAny));
+        if (filterPublishTopicExcludeRegexMatchAny != null && !filterPublishTopicExcludeRegexMatchAny.isEmpty())
+            errors.addAll(validateRegexPatterns("Publish Topic Exclude Regex Match Any.", filterPublishTopicExcludeRegexMatchAny));
+        if (filterSubscribeTopicIncludeRegexMatchAny != null && !filterSubscribeTopicIncludeRegexMatchAny.isEmpty())
+            errors.addAll(validateRegexPatterns("Subscribe Topic Include Regex Match Any.", filterSubscribeTopicIncludeRegexMatchAny));
+        if (filterSubscribeTopicExcludeRegexMatchAny != null && !filterSubscribeTopicExcludeRegexMatchAny.isEmpty())
+            errors.addAll(validateRegexPatterns("Subscribe Topic Exclude Regex Match Any.", filterSubscribeTopicExcludeRegexMatchAny));
+
+
         if (representationPublishValuePath == null || representationPublishValuePath.isEmpty())
             errors.addAll(validateLineToPayloadPathComponents("Representation Publish Value Path", representationPublishValuePath));
         // Representation Publish Timestamp Path can be empty
@@ -428,6 +473,32 @@ public class ConnectionSettings {
             return new ArrayList<>(List.of("The value of '" + name + "' must be between 0 and 2."));
 
         return List.of();
+    }
+
+    public static List<String> validateRegexPatterns(@NotNull String name, @Nullable Object value) {
+        //noinspection ConstantValue,DuplicatedCode
+        if (name == null)
+            throw new NullPointerException("name can not be null");
+
+        if (value == null)
+            return new ArrayList<>(List.of("The value of '" + name + "' can not be null."));
+
+        if (!(value instanceof String))
+            return new ArrayList<>(List.of("The value of '" + name + "' must be a string."));
+
+        List<String> errors = new ArrayList<>();
+        for (var pattern : multilineToStringList((String) value)) {
+            try {
+                Pattern.compile(pattern);
+            } catch (Exception e) {
+                errors.add("The value of '" + name + " contains '" + pattern + "' which is not a valid regex pattern.");
+            }
+        }
+
+        if (!errors.isEmpty())
+            errors.add("The value of '" + name + "' must contain only valid regex patterns.");
+
+        return errors;
     }
 
     private @Nullable IConnector _externalConnector;
