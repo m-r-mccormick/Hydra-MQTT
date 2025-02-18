@@ -109,6 +109,10 @@ public class MqttConnectionSettingsRecord extends PersistentRecord implements IC
                 getTagProviderSub(),
                 getBrokerPublishTopicSuffix(),
                 getTagProviderPublishRoutingPropertiesEnabled(),
+                getPublishTopicIncludeRegexMatchAny(),
+                getPublishTopicExcludeRegexMatchAny(),
+                getSubscribeTopicIncludeRegexMatchAny(),
+                getSubscribeTopicExcludeRegexMatchAny(),
                 getRepresentationPublishValuePath(),
                 getRepresentationPublishTimestampPath(),
                 getRepresentationPublishTimestampFormat(),
@@ -293,6 +297,91 @@ public class MqttConnectionSettingsRecord extends PersistentRecord implements IC
 
     static final Category Routing = new Category(BUNDLE_PREFIX + ".Category.Routing", 1004)
             .include(BrokerPublishTopicSuffix, TagProviderPublishRoutingPropertiesEnabled);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public static final StringField PublishTopicIncludeRegexMatchAny = new StringField(META,
+            "PublishTopicIncludeRegexMatchAny").setDefault("").setMultiLine()
+            .addValidator((IValidator) iValidatable -> {
+        var value = iValidatable.getValue();
+        if (value == null)
+            return;
+        for (var error : ConnectionSettings.validateRegexPatterns("Publish Topic Include Regex Match Any",
+                value))
+            iValidatable.error(new ValidationError(error));
+    });
+    public void setPublishTopicIncludeRegexMatchAny(String value) {
+        setString(PublishTopicIncludeRegexMatchAny, value);
+    }
+    public @Nullable String getPublishTopicIncludeRegexMatchAny() {
+        return getString(PublishTopicIncludeRegexMatchAny);
+    }
+
+    public static final StringField PublishTopicExcludeRegexMatchAny = new StringField(META,
+            "PublishTopicExcludeRegexMatchAny").setDefault("").setMultiLine()
+            .addValidator((IValidator) iValidatable -> {
+        var value = iValidatable.getValue();
+        if (value == null)
+            return;
+        for (var error : ConnectionSettings.validateRegexPatterns("Publish Topic Exclude Regex Match Any",
+                value))
+            iValidatable.error(new ValidationError(error));
+    });
+    public void setPublishTopicExcludeRegexMatchAny(String value) {
+        setString(PublishTopicExcludeRegexMatchAny, value);
+    }
+    public @Nullable String getPublishTopicExcludeRegexMatchAny() {
+        return getString(PublishTopicExcludeRegexMatchAny);
+    }
+
+    public static final StringField SubscribeTopicIncludeRegexMatchAny = new StringField(META,
+            "SubscribeTopicIncludeRegexMatchAny").setDefault("").setMultiLine()
+            .addValidator((IValidator) iValidatable -> {
+        var value = iValidatable.getValue();
+        if (value == null)
+            return;
+        for (var error : ConnectionSettings.validateRegexPatterns("Subscribe Topic Include Regex Match Any",
+                value))
+            iValidatable.error(new ValidationError(error));
+    });
+    public void setSubscribeTopicIncludeRegexMatchAny(String value) {
+        setString(SubscribeTopicIncludeRegexMatchAny, value);
+    }
+    public @Nullable String getSubscribeTopicIncludeRegexMatchAny() {
+        return getString(SubscribeTopicIncludeRegexMatchAny);
+    }
+
+    public static final StringField SubscribeTopicExcludeRegexMatchAny = new StringField(META,
+            "SubscribeTopicExcludeRegexMatchAny").setDefault("").setMultiLine().addValidator((IValidator) iValidatable -> {
+        var value = iValidatable.getValue();
+        if (value == null)
+            return;
+        for (var error : ConnectionSettings.validateRegexPatterns("Subscribe Topic Exclude Regex Match Any",
+                value))
+            iValidatable.error(new ValidationError(error));
+    });
+    public void setSubscribeTopicExcludeRegexMatchAny(String value) {
+        setString(SubscribeTopicExcludeRegexMatchAny, value);
+    }
+    public @Nullable String getSubscribeTopicExcludeRegexMatchAny() {
+        return getString(SubscribeTopicExcludeRegexMatchAny);
+    }
+
+
+    static final Category Filtering = new Category(BUNDLE_PREFIX + ".Category.Filtering", 1005)
+            .include(PublishTopicIncludeRegexMatchAny, PublishTopicExcludeRegexMatchAny,
+                    SubscribeTopicIncludeRegexMatchAny, SubscribeTopicExcludeRegexMatchAny);
 
 
 
