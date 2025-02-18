@@ -4,6 +4,12 @@ title: 'Changelog'
 
 # v0.x
 
+## v0.4.0
+
+- __Multiple Connections__: Connect to up to 10 brokers, each with dedicated connection settings, and a `Notes` area
+  for notes to self for each connection.
+    - See the [Connection](Pages/Configuration/00-Connection.md) section.
+
 
 ## v0.3.0
 

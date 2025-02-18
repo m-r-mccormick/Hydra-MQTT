@@ -88,7 +88,7 @@ First, navigate to `Config > Tags > Realtime` and create two tag providers by cl
   <figcaption>Real-Time Tag Providers</figcaption>
 </figure>
 
-Next, navigate to the `Connection` configuration at `Config > Hydra-MQTT > Connection`.
+Next, navigate to the `Connection 0` configuration at `Config > Hydra-MQTT > Connection 0`.
 Then, input the following options:
 
 - `Enabled > Connection Enabled`: `true`
