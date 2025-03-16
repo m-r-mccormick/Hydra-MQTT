@@ -34,12 +34,11 @@ When prompted, enter the `Certificate Signer Name` to be used for signing the mo
 If utilizing this module to support an academic publication, please cite [this](http://dx.doi.org/10.13140/RG.2.2.25803.60967) paper.
 
 ```bibtex
-@article{mccormick-2024-real-time-manufacturing,
-    author = "McCormick, M. R. and Wuest, Thorsten",
-    title = "Real-Time Manufacturing Datasets: An Event Sourcing Approach",
-    year = "2024",
-    month = "07",
-    doi = "10.13140/RG.2.2.25803.60967",
-    url = "http://dx.doi.org/10.13140/RG.2.2.25803.60967",
+@article{mccormick-2025-testbed-as-a
+	author = {McCormick, M. R. and Wuest, Thorsten},
+	title = {Testbed as a Service (TaaS): A Scalable Ecosystem for Smart Manufacturing and Industry 4.0 Collaboration},
+	year = {2025},
+	doi = {10.13140/RG.2.2.25803.60967},
+	url = {http://dx.doi.org/10.13140/RG.2.2.25803.60967},
 }
 ```

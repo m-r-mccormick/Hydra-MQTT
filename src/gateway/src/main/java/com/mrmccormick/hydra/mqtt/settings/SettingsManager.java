@@ -4,6 +4,7 @@ import com.mrmccormick.hydra.mqtt.Connection;
 import com.mrmccormick.hydra.mqtt.GatewayHook;
 import com.mrmccormick.hydra.mqtt.domain.settings.IConnectionSettingsProvider;
 import com.mrmccormick.hydra.mqtt.domain.settings.ISettingsManager;
+import com.mrmccormick.hydra.mqtt.settings.generated.*;
 import com.inductiveautomation.ignition.gateway.model.GatewayContext;
 import com.inductiveautomation.ignition.gateway.web.models.ConfigCategory;
 import com.inductiveautomation.ignition.gateway.web.models.IConfigTab;
@@ -35,11 +36,146 @@ public class SettingsManager implements ISettingsManager {
         } catch (SQLException e) {
             throw new Exception("Error updating configuration schema.", e);
         }
+        try {
+            MqttConnectionSettingsRecord1.UpdateSchema(context);
+        } catch (SQLException e) {
+            throw new Exception("Error updating configuration schema.", e);
+        }
+        try {
+            MqttConnectionSettingsRecord2.UpdateSchema(context);
+        } catch (SQLException e) {
+            throw new Exception("Error updating configuration schema.", e);
+        }
+        try {
+            MqttConnectionSettingsRecord3.UpdateSchema(context);
+        } catch (SQLException e) {
+            throw new Exception("Error updating configuration schema.", e);
+        }
+        try {
+            MqttConnectionSettingsRecord4.UpdateSchema(context);
+        } catch (SQLException e) {
+            throw new Exception("Error updating configuration schema.", e);
+        }
+        try {
+            MqttConnectionSettingsRecord5.UpdateSchema(context);
+        } catch (SQLException e) {
+            throw new Exception("Error updating configuration schema.", e);
+        }
+        try {
+            MqttConnectionSettingsRecord6.UpdateSchema(context);
+        } catch (SQLException e) {
+            throw new Exception("Error updating configuration schema.", e);
+        }
+        try {
+            MqttConnectionSettingsRecord7.UpdateSchema(context);
+        } catch (SQLException e) {
+            throw new Exception("Error updating configuration schema.", e);
+        }
+        try {
+            MqttConnectionSettingsRecord8.UpdateSchema(context);
+        } catch (SQLException e) {
+            throw new Exception("Error updating configuration schema.", e);
+        }
+        try {
+            MqttConnectionSettingsRecord9.UpdateSchema(context);
+        } catch (SQLException e) {
+            throw new Exception("Error updating configuration schema.", e);
+        }
 
         List<IConnectionSettingsProvider> providers = new ArrayList<>();
 
         try {
             var settingsRecord = context.getLocalPersistenceInterface().createNew(MqttConnectionSettingsRecord.META);
+            settingsRecord.setId(0L);
+            // If setting values don't already exist, set them. (Doesn't overwrite existing values)
+            context.getSchemaUpdater().ensureRecordExists(settingsRecord);
+            providers.add(settingsRecord);
+        } catch (Exception e) {
+            throw new Exception("Error initializing configuration.", e);
+        }
+
+        try {
+            var settingsRecord = context.getLocalPersistenceInterface().createNew(MqttConnectionSettingsRecord1.META);
+            settingsRecord.setId(0L);
+            // If setting values don't already exist, set them. (Doesn't overwrite existing values)
+            context.getSchemaUpdater().ensureRecordExists(settingsRecord);
+            providers.add(settingsRecord);
+        } catch (Exception e) {
+            throw new Exception("Error initializing configuration.", e);
+        }
+
+        try {
+            var settingsRecord = context.getLocalPersistenceInterface().createNew(MqttConnectionSettingsRecord2.META);
+            settingsRecord.setId(0L);
+            // If setting values don't already exist, set them. (Doesn't overwrite existing values)
+            context.getSchemaUpdater().ensureRecordExists(settingsRecord);
+            providers.add(settingsRecord);
+        } catch (Exception e) {
+            throw new Exception("Error initializing configuration.", e);
+        }
+
+        try {
+            var settingsRecord = context.getLocalPersistenceInterface().createNew(MqttConnectionSettingsRecord3.META);
+            settingsRecord.setId(0L);
+            // If setting values don't already exist, set them. (Doesn't overwrite existing values)
+            context.getSchemaUpdater().ensureRecordExists(settingsRecord);
+            providers.add(settingsRecord);
+        } catch (Exception e) {
+            throw new Exception("Error initializing configuration.", e);
+        }
+
+        try {
+            var settingsRecord = context.getLocalPersistenceInterface().createNew(MqttConnectionSettingsRecord4.META);
+            settingsRecord.setId(0L);
+            // If setting values don't already exist, set them. (Doesn't overwrite existing values)
+            context.getSchemaUpdater().ensureRecordExists(settingsRecord);
+            providers.add(settingsRecord);
+        } catch (Exception e) {
+            throw new Exception("Error initializing configuration.", e);
+        }
+
+        try {
+            var settingsRecord = context.getLocalPersistenceInterface().createNew(MqttConnectionSettingsRecord5.META);
+            settingsRecord.setId(0L);
+            // If setting values don't already exist, set them. (Doesn't overwrite existing values)
+            context.getSchemaUpdater().ensureRecordExists(settingsRecord);
+            providers.add(settingsRecord);
+        } catch (Exception e) {
+            throw new Exception("Error initializing configuration.", e);
+        }
+
+        try {
+            var settingsRecord = context.getLocalPersistenceInterface().createNew(MqttConnectionSettingsRecord6.META);
+            settingsRecord.setId(0L);
+            // If setting values don't already exist, set them. (Doesn't overwrite existing values)
+            context.getSchemaUpdater().ensureRecordExists(settingsRecord);
+            providers.add(settingsRecord);
+        } catch (Exception e) {
+            throw new Exception("Error initializing configuration.", e);
+        }
+
+        try {
+            var settingsRecord = context.getLocalPersistenceInterface().createNew(MqttConnectionSettingsRecord7.META);
+            settingsRecord.setId(0L);
+            // If setting values don't already exist, set them. (Doesn't overwrite existing values)
+            context.getSchemaUpdater().ensureRecordExists(settingsRecord);
+            providers.add(settingsRecord);
+        } catch (Exception e) {
+            throw new Exception("Error initializing configuration.", e);
+        }
+
+        try {
+            var settingsRecord = context.getLocalPersistenceInterface().createNew(MqttConnectionSettingsRecord8.META);
+            settingsRecord.setId(0L);
+            // If setting values don't already exist, set them. (Doesn't overwrite existing values)
+            context.getSchemaUpdater().ensureRecordExists(settingsRecord);
+            providers.add(settingsRecord);
+        } catch (Exception e) {
+            throw new Exception("Error initializing configuration.", e);
+        }
+
+        try {
+            var settingsRecord = context.getLocalPersistenceInterface().createNew(MqttConnectionSettingsRecord9.META);
             settingsRecord.setId(0L);
             // If setting values don't already exist, set them. (Doesn't overwrite existing values)
             context.getSchemaUpdater().ensureRecordExists(settingsRecord);
@@ -79,7 +215,16 @@ public class SettingsManager implements ISettingsManager {
     );
 
     private static final @NotNull List<IConfigTab> _configPanels = List.of(
-            MqttConnectionPage.CONFIG_ENTRY
+            MqttConnectionPage.CONFIG_ENTRY,
+            MqttConnectionPage1.CONFIG_ENTRY,
+            MqttConnectionPage2.CONFIG_ENTRY,
+            MqttConnectionPage3.CONFIG_ENTRY,
+            MqttConnectionPage4.CONFIG_ENTRY,
+            MqttConnectionPage5.CONFIG_ENTRY,
+            MqttConnectionPage6.CONFIG_ENTRY,
+            MqttConnectionPage7.CONFIG_ENTRY,
+            MqttConnectionPage8.CONFIG_ENTRY,
+            MqttConnectionPage9.CONFIG_ENTRY
     );
     private final List<Connection> _connections = new ArrayList<>();
 }

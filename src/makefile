@@ -45,6 +45,51 @@ Hydra-MQTT-*-unsigned.modl: config build/doc
 		mv gateway/pom.xml.versionsBackup gateway/pom.xml; \
 	fi
 
+#	# Generate code: Duplicate classes with incrementing index into dedicated 'generated' directories
+	@settings_root_java="$(GEN_ROOT_JAVA)"; \
+	settings_root_reso="$(GEN_ROOT_RESO)"; \
+	page_file="MqttConnectionPage"; \
+	record_file="MqttConnectionSettingsRecord"; \
+	if [ ! -f "$${settings_root_java}/$${page_file}.java" ]; then \
+		echo "Error: $${settings_root_java}/$${page_file}.java missing"; \
+		exit 1; \
+	fi && \
+	if [ ! -f "$${settings_root_java}/$${record_file}.java" ]; then \
+		echo "Error: $${settings_root_java}/$${record_file}.java missing"; \
+		exit 1; \
+	fi && \
+	if [ ! -f "$${settings_root_reso}/$${record_file}.properties" ]; then \
+		echo "Error: $${settings_root_reso}/$${record_file}.properties missing"; \
+		exit 1; \
+	fi && \
+	gen_root_java="$${settings_root_java}/generated"; \
+	gen_root_reso="$${settings_root_reso}/generated"; \
+	mkdir -p "$${gen_root_java}" && \
+	mkdir -p "$${gen_root_reso}" && \
+	old_header="package com.mrmccormick.hydra.mqtt.settings;"; \
+	new_header="package com.mrmccormick.hydra.mqtt.settings.generated;"; \
+	new_import1="import com.mrmccormick.hydra.mqtt.domain.settings.TimestampFormat;"; \
+	new_import2="import com.mrmccormick.hydra.mqtt.domain.settings.TimestampIntegerFormat;"; \
+	new_import3="import com.mrmccormick.hydra.mqtt.settings.SettingsCategory;"; \
+	new_import4="import com.mrmccormick.hydra.mqtt.domain.settings.IConnectionSettingsProvider;"; \
+	new_import5="import com.mrmccormick.hydra.mqtt.settings.ConnectionSettings;"; \
+	new_import6="import com.mrmccormick.hydra.mqtt.settings.ConnectionSettingsChangeHandler;"; \
+	new_replace="$${new_header}\n$${new_import1}\n$${new_import2}\n$${new_import3}\n$${new_import4}\n$${new_import5}\n$${new_import6}"; \
+	i=1; \
+    while [ "$${i}" -le "9" ]; do \
+#		echo "Generating Files i = $${i}" && \
+		cp "$${settings_root_java}/$${page_file}.java" "$${gen_root_java}/$${page_file}$${i}.java" && \
+		cp "$${settings_root_java}/$${record_file}.java" "$${gen_root_java}/$${record_file}$${i}.java" && \
+		cp "$${settings_root_reso}/$${record_file}.properties" "$${gen_root_reso}/$${record_file}$${i}.properties" && \
+		sed -i "s/$${page_file}/$${page_file}$${i}/g" "$${gen_root_java}/$${page_file}$${i}.java" && \
+		sed -i "s/$${record_file}/$${record_file}$${i}/g" "$${gen_root_java}/$${page_file}$${i}.java" && \
+		sed -i "s/ThisId = 0;/ThisId = $${i};/g" "$${gen_root_java}/$${page_file}$${i}.java" && \
+		sed -i "s/$${record_file}/$${record_file}$${i}/g" "$${gen_root_java}/$${record_file}$${i}.java" && \
+		sed -i "s/$${old_header}/$${new_replace}/g" "$${gen_root_java}/$${page_file}$${i}.java" && \
+		sed -i "s/$${old_header}/$${new_replace}/g" "$${gen_root_java}/$${record_file}$${i}.java" && \
+    	i=$$(($${i} + 1)); \
+    done
+
 	@VERSION=$$(cat config | grep "BUILD_MODULE=" | sed 's/.*=//g') && \
 	echo "Building module version $${VERSION}..."; \
 	mvn versions:set -DnewVersion=$${VERSION} -DgenerateBackupPoms=true -f pom.xml -q || $$(cat config.log; exit 1)

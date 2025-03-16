@@ -142,8 +142,12 @@ public class MqttConnectionSettingsRecord extends PersistentRecord implements IC
     }
 
 
+    public static final StringField ConnectionNotes = new StringField(META, "ConnectionNotes")
+            .setDefault("").setMultiLine();
+
+
     static final Category Enabled = new Category(BUNDLE_PREFIX + ".Category.Connection", 1000)
-            .include(ConnectionEnabled);
+            .include(ConnectionEnabled, ConnectionNotes);
 
 
 

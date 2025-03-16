@@ -4,6 +4,19 @@ title: 'Changelog'
 
 # v0.x
 
+## v0.4.0
+
+- __Multiple Connections__: Connect to up to 10 brokers, each with dedicated connection settings, and a `Notes` area
+  for notes to self for each connection.
+    - See the [Connection](Pages/Configuration/00-Connection.md) section.
+
+
+## v0.3.0
+
+- __RegEx Topic Filtering__: Filter published and received messages based on topic through RegEx matching.
+    - See the [Getting Started](Pages/Getting%20Started/05-Filtering.md) and
+      [Configuration](Pages/Configuration/05-Filtering.md) sections.
+
 
 ## v0.3.0
 
